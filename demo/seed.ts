@@ -36,8 +36,8 @@ export function seedDemo(db: Db, today: string, nowMinutes: number, days = 30): 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
     );
     const pause = db.prepare('INSERT INTO pauza (zaznam_id, od, "do") VALUES (?, ?, ?)');
-    // Duplicate means another worker already has this note and activity (as at the station).
-    const seen = new Map<string, string>();
+    // A second record of a note and activity is a duplicate, by the same worker or another (as at the station).
+    const seen = new Set<string>();
     for (const r of h.records) {
       const n = byNumber.get(r.note);
       if (!n) continue;
@@ -58,9 +58,9 @@ export function seedDemo(db: Db, today: string, nowMinutes: number, days = 30): 
         r.method,
         r.status,
         r.status === 'ok' ? suspicionOf(net, limits) : null,
-        seen.has(key) && seen.get(key) !== r.worker ? 1 : 0,
+        seen.has(key) ? 1 : 0,
       ) as { id: number };
-      if (!seen.has(key)) seen.set(key, r.worker);
+      seen.add(key);
       if (r.pauseSeconds > 0) {
         const from = r.start + Math.round((r.end - r.start - r.pauseSeconds * 1000) / 2);
         pause.run(row.id, from, from + r.pauseSeconds * 1000);
