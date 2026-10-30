@@ -9,6 +9,7 @@ export interface LocalParts {
   second: number;
 }
 
+const DAY_MS = 86_400_000;
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
 function formatter(tz: string): Intl.DateTimeFormat {
@@ -50,12 +51,19 @@ function offsetAt(ms: number, tz: string): number {
   return asUtc - Math.floor(ms / 1000) * 1000;
 }
 
-/** Epoch ms of a local wall-clock time. In the autumn overlap the earlier instant wins; in the spring gap the time moves forward. */
+/**
+ * Epoch ms of a local wall-clock time. In the autumn overlap (the wall time occurs twice) the earlier instant wins;
+ * in the spring gap (the wall time does not exist) the result is the later candidate, i.e. the time moves forward by the gap.
+ */
 export function localToEpoch(year: number, month: number, day: number, hour = 0, minute = 0, tz: string): number {
   const guess = Date.UTC(year, month - 1, day, hour, minute);
-  const first = guess - offsetAt(guess, tz);
-  const second = guess - offsetAt(first, tz);
-  return Math.min(first, second);
+  // The offset in force a day before and a day after the wall time brackets any transition near it.
+  const candidates = [...new Set([offsetAt(guess - DAY_MS, tz), offsetAt(guess + DAY_MS, tz)])].map((o) => guess - o).sort((a, b) => a - b);
+  const exact = candidates.filter((c) => {
+    const p = localParts(c, tz);
+    return p.year === year && p.month === month && p.day === day && p.hour === hour && p.minute === minute;
+  });
+  return exact[0] ?? candidates[candidates.length - 1] ?? guess;
 }
 
 /** "YYYY-MM-DD" of the local day that contains `ms`. */
