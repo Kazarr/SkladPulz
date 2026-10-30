@@ -8,3 +8,10 @@ export function formatNumber(n: number | null, digits = 1): string {
 export function formatSeconds(n: number | null): string {
   return n === null ? '–' : formatDuration(n);
 }
+
+/** A percentage with the % sign: "110,5 %"; `signed` adds + to positive values ("+5,2 %"). */
+export function formatPercent(n: number | null, digits = 1, signed = false): string {
+  if (n === null) return '–';
+  const text = formatNumber(n, digits);
+  return `${signed && n > 0 ? '+' : ''}${text}\u00a0%`;
+}

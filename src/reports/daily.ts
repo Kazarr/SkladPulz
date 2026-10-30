@@ -2,6 +2,7 @@ import { ACTIVITIES, type Activity } from '../config.ts';
 import type { Db } from '../db/db.ts';
 import type { EndMethod, RecordStatus } from '../store/records.ts';
 import { listCountedDayRecords, listDayRecords, type ReportRecord } from './queries.ts';
+import { DEFAULT_WEIGHTS, performanceIndex, type WeightsByActivity } from '../domain/index.ts';
 import { totalsByWorkerAndActivity, totalsOf, type Totals } from './metrics.ts';
 
 export type StatusFilter = RecordStatus | 'kontrola';
@@ -15,6 +16,8 @@ export interface ReportFilter {
 
 export interface SummaryRow extends Totals {
   workerName: string;
+  /** Performance index in percent against the whole team of that day and activity; null without net time. */
+  index: number | null;
   /** Records excluded from the figures: closed automatically at shift end. */
   unfinished: number;
   /** Records excluded from the figures: suspect, not yet confirmed. */
@@ -87,21 +90,27 @@ function matchesStatus(r: ReportRecord, status: StatusFilter | null): boolean {
   return status === 'kontrola' ? needsReview(r) : r.status === status;
 }
 
-export function buildDailyReport(db: Db, tz: string, date: string, filter: ReportFilter): DailyReport {
+export function buildDailyReport(db: Db, tz: string, date: string, filter: ReportFilter, weights: WeightsByActivity = DEFAULT_WEIGHTS): DailyReport {
   const all = listDayRecords(db, tz, date, filter);
-  const counted = listCountedDayRecords(db, tz, date, filter);
+  // The index is relative to the whole team, also when the list is filtered to one worker.
+  const team = listCountedDayRecords(db, tz, date, { workerId: null, activity: filter.activity });
+  const counted = filter.workerId === null ? team : team.filter((r) => r.workerId === filter.workerId);
   const names = new Map(all.map((r) => [r.workerId, r.workerName]));
   const sections: DailySection[] = [];
   for (const activity of ACTIVITIES) {
     const mine = all.filter((r) => r.activity === activity);
     if (mine.length === 0) continue;
     const countedHere = counted.filter((r) => r.activity === activity);
+    const teamHere = team.filter((r) => r.activity === activity);
+    const w = weights[activity];
     const workerIds = [...new Set(mine.map((r) => r.workerId))];
     const rows = workerIds.map((workerId): SummaryRow => {
-      const totals = totalsByWorkerAndActivity(countedHere.filter((r) => r.workerId === workerId))[0] ?? totalsOf([]);
+      const ownCounted = countedHere.filter((r) => r.workerId === workerId);
+      const totals = totalsByWorkerAndActivity(ownCounted)[0] ?? totalsOf([]);
       const theirs = mine.filter((r) => r.workerId === workerId);
       return {
         ...totals,
+        index: performanceIndex(w, ownCounted, teamHere),
         workerName: names.get(workerId) ?? '',
         unfinished: theirs.filter((r) => r.status === 'neukoncene').length,
         suspect: theirs.filter(isSuspectUnconfirmed).length,
@@ -110,6 +119,7 @@ export function buildDailyReport(db: Db, tz: string, date: string, filter: Repor
     rows.sort((a, b) => a.workerName.localeCompare(b.workerName, 'sk'));
     const total: SummaryRow = {
       ...totalsOf(countedHere),
+      index: performanceIndex(w, countedHere, teamHere),
       workerName: 'Tím spolu',
       unfinished: rows.reduce((n, r) => n + r.unfinished, 0),
       suspect: rows.reduce((n, r) => n + r.suspect, 0),

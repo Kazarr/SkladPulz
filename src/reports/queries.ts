@@ -13,8 +13,8 @@ function toReportRecord(r: Row): ReportRecord {
   return { ...toRecord(r), workerName: r.meno };
 }
 
-function dayQuery(db: Db, source: 'zaznam' | 'zaznam_hodnotene', tz: string, date: string, f: { workerId: number | null; activity: Activity | null }): ReportRecord[] {
-  const { from, to } = localDayRange(date, date, tz);
+function rangeQuery(db: Db, source: 'zaznam' | 'zaznam_hodnotene', tz: string, fromDate: string, toDate: string, f: { workerId: number | null; activity: Activity | null }): ReportRecord[] {
+  const { from, to } = localDayRange(fromDate, toDate, tz);
   const rows = db
     .prepare(
       `SELECT r.*, z.meno FROM ${source} r JOIN zamestnanec z ON z.id = r.zamestnanec_id
@@ -28,12 +28,17 @@ function dayQuery(db: Db, source: 'zaznam' | 'zaznam_hodnotene', tz: string, dat
 
 /** Records of any status that started on the local day `date`. */
 export function listDayRecords(db: Db, tz: string, date: string, f: { workerId: number | null; activity: Activity | null }): ReportRecord[] {
-  return dayQuery(db, 'zaznam', tz, date, f);
+  return rangeQuery(db, 'zaznam', tz, date, date, f);
 }
 
 /** Counted records (glossary) that started on the local day `date`. */
 export function listCountedDayRecords(db: Db, tz: string, date: string, f: { workerId: number | null; activity: Activity | null }): ReportRecord[] {
-  return dayQuery(db, 'zaznam_hodnotene', tz, date, f);
+  return rangeQuery(db, 'zaznam_hodnotene', tz, date, date, f);
+}
+
+/** Records of any status or only counted ones (glossary) that started on the local days `fromDate`..`toDate` inclusive. */
+export function listRangeRecords(db: Db, source: 'zaznam' | 'zaznam_hodnotene', tz: string, fromDate: string, toDate: string, f: { workerId: number | null; activity: Activity | null }): ReportRecord[] {
+  return rangeQuery(db, source, tz, fromDate, toDate, f);
 }
 
 /** Every record of one delivery note, any status, oldest first. */

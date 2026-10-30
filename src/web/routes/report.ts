@@ -6,9 +6,10 @@ import { ACTIVITIES, type Activity } from '../../config.ts';
 import { ACTIVITY_LABEL } from '../../domain/station.ts';
 import { buildDailyReport, END_METHOD_LABEL, recordRowClass, recordTags, STATUS_LABEL, type DailyReport, type ReportFilter, type StatusFilter, type SummaryRow } from '../../reports/daily.ts';
 import { dailyWorkbookBytes } from '../../reports/daily-export.ts';
-import { formatNumber, formatSeconds } from '../../reports/format.ts';
+import { formatNumber, formatPercent, formatSeconds } from '../../reports/format.ts';
 import { listNoteRecords, type ReportRecord } from '../../reports/queries.ts';
 import { getNote } from '../../store/delivery-notes.ts';
+import { getIndexWeights } from '../../store/index-weights.ts';
 import { listWorkers } from '../../store/workers.ts';
 import { addDays, formatDuration, isDate, localDate, localDateTime, localTime } from '../../time.ts';
 
@@ -52,6 +53,7 @@ function summaryRow(r: SummaryRow): Html {
     <td class="num">${formatSeconds(r.netSeconds)}</td>
     <td class="num">${formatNumber(r.notesPerHour)}</td><td class="num">${formatNumber(r.linesPerHour)}</td><td class="num">${formatNumber(r.kgPerHour)}</td>
     <td class="num">${formatSeconds(r.avgSecondsPerNote)}</td><td class="num">${formatSeconds(r.avgSecondsPerLine)}</td>
+    <td class="num">${formatPercent(r.index)}</td>
     <td class="num">${r.unfinished}</td><td class="num">${r.suspect}</td>`;
 }
 
@@ -62,13 +64,14 @@ function summaryTable(report: DailyReport): Html {
       <table>
         <thead><tr><th>Zamestnanec</th><th class="num">DL</th><th class="num">Položky</th><th class="num">Kusy</th><th class="num">kg</th><th class="num">Čistý čas</th>
           <th class="num">DL / hod</th><th class="num">Položky / hod</th><th class="num">kg / hod</th><th class="num">Ø čas na DL</th><th class="num">Ø čas na položku</th>
+          <th class="num" title="Výkonový index: norma času ÷ skutočný čas, priemer tímu = 100 %. Vysvetlenie je na stránke Index.">Index</th>
           <th class="num" title="Zatvorené automaticky na konci zmeny, do výpočtu nevstupujú">Neukončené</th>
           <th class="num" title="Krátke alebo dlhé záznamy, ktoré vedúci ešte nepotvrdil; do výpočtu nevstupujú">Podozrivé</th></tr></thead>
         <tbody>${s.rows.map((r) => html`<tr>${summaryRow(r)}</tr>`)}</tbody>
         <tfoot><tr>${summaryRow(s.total)}</tr></tfoot>
       </table>`,
   )}
-  <p class="muted">Do súhrnu vstupujú len hodnotené záznamy. Neukončené a podozrivé záznamy čakajú na kontrolu vedúcim.</p>`;
+  <p class="muted">Do súhrnu vstupujú len hodnotené záznamy. Neukončené a podozrivé záznamy čakajú na kontrolu vedúcim. <a href="/index">Ako sa počíta index</a>.</p>`;
 }
 
 function recordsTable(records: ReportRecord[], tz: string): Html {
@@ -98,7 +101,7 @@ export function reportRoutes(deps: AppDeps): Hono<AppEnv> {
     const date = dayOf(c.req.query('datum'));
     if (date === null) return c.text('Neplatný dátum, použite tvar RRRR-MM-DD.', 400);
     const filter = parseFilter((n) => c.req.query(n));
-    const report = buildDailyReport(deps.db, tz, date, filter);
+    const report = buildDailyReport(deps.db, tz, date, filter, getIndexWeights(deps.db));
     const [y, m, d] = date.split('-').map(Number);
     const body = html`
       <form class="filters no-print" method="get" action="/prehlad">
@@ -125,7 +128,7 @@ export function reportRoutes(deps: AppDeps): Hono<AppEnv> {
   r.get('/prehlad/export.xlsx', async (c) => {
     const date = dayOf(c.req.query('datum'));
     if (date === null) return c.text('Neplatný dátum, použite tvar RRRR-MM-DD.', 400);
-    const bytes = await dailyWorkbookBytes(buildDailyReport(deps.db, tz, date, parseFilter((n) => c.req.query(n))), tz);
+    const bytes = await dailyWorkbookBytes(buildDailyReport(deps.db, tz, date, parseFilter((n) => c.req.query(n)), getIndexWeights(deps.db)), tz);
     return c.body(bytes as Uint8Array<ArrayBuffer>, 200, {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="skladpulz-prehlad-${date}.xlsx"`,

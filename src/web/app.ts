@@ -7,6 +7,8 @@ import type { DeliveryNoteSource } from '../onix/source.ts';
 import { authMiddleware, authRoutes } from './auth.ts';
 import { adminRoutes } from './routes/admin.ts';
 import { emailRoutes } from './routes/email.ts';
+import { comparisonRoutes } from './routes/comparison.ts';
+import { indexWeightsRoutes } from './routes/index-weights.ts';
 import { reportRoutes } from './routes/report.ts';
 import { correctionRoutes } from './routes/corrections.ts';
 import { stationRoutes } from './routes/station.ts';
@@ -42,6 +44,8 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   app.route('/', reportRoutes(deps));
   app.route('/', correctionRoutes(deps));
   app.route('/', emailRoutes(deps));
+  app.route('/', comparisonRoutes(deps));
+  app.route('/', indexWeightsRoutes(deps));
   app.onError((err, c) => {
     deps.logError(`${c.req.method} ${c.req.path}`, err);
     return c.text('Nastala chyba. Skúste to znova; ak pretrváva, kontaktujte správcu.', 500);

@@ -55,6 +55,13 @@ A configured daily time window (`06:00–14:00`). A record still running at the 
 Standard time of a record divided by its net time, scaled so the team average is 100 %. Standard time = fixed time per note + time per line + time per kg, set per activity.
 _Avoid_: score, rating
 
+**Index weights** (`vahy_indexu`):
+The three numbers of the standard time (fixed seconds per note, seconds per line, seconds per kg) of one activity. Placeholders until a manager saves them, preferably estimated from 2-4 weeks of counted records.
+
+**Band** (`pasmo`):
+Top 30 % / middle 40 % / bottom 30 % of the workers by performance index, shown instead of an exact rank.
+_Avoid_: tier, grade
+
 **Manager** (`vedúci`):
 The person who reviews and corrects records and reads reports; signs in with a name and password from the configuration.
 _Avoid_: admin, supervisor
