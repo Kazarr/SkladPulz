@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildDailySummary } from '../../src/email/daily-summary.ts';
+import ExcelJS from 'exceljs';
+import { saveIndexWeights } from '../../src/store/index-weights.ts';
 import { at, testEnv } from '../helpers.ts';
 import { addRecord, addWorker } from '../reports/seed.ts';
 
@@ -64,4 +66,22 @@ test('worker names are escaped in the HTML body', async () => {
   const m = await buildDailySummary(env.db, env.config, D);
   assert.ok(!m.html.includes('<script>'));
   assert.ok(m.html.includes('&lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;Co&quot;'));
+});
+
+test('the attached Excel uses the saved index weights, not the placeholders', async () => {
+  const env = testEnv(over(true));
+  const anna = addWorker(env.db, 'Anna', 'Z0001');
+  const boris = addWorker(env.db, 'Boris', 'Z0002');
+  addRecord(env.db, { worker: anna, start: at('08:00'), net: 100, lines: 1, kg: 0, dl: 'DL1' });
+  addRecord(env.db, { worker: boris, start: at('08:00'), net: 100, lines: 20, kg: 0, dl: 'DL2' });
+  // only per-line time counts: Boris 200 s of standard in 100 s = 2.0, team 210 / 200 = 1.05, so 190.5 %
+  saveIndexWeights(env.db, 'VYCH', { fixedSeconds: 0, perLineSeconds: 10, perKgSeconds: 0 }, 'vedúci', at('07:00'));
+  const m = await buildDailySummary(env.db, env.config, D);
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(Buffer.from(m.attachments[0]?.content ?? new Uint8Array()) as unknown as ArrayBuffer);
+  const sheet = wb.getWorksheet('Súhrn');
+  const header = (sheet?.getRow(1).values as unknown[]).indexOf('Výkonový index (%)');
+  const row = sheet?.getRows(2, 10)?.find((r) => r.getCell(2).value === 'Boris');
+  assert.ok(header > 0 && row);
+  assert.ok(Math.abs(Number(row.getCell(header).value) - 190.476) < 0.01);
 });
