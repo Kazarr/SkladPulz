@@ -64,13 +64,13 @@ export function listSignInsAt(db: Db, stationId: number): SignIn[] {
   return (db.prepare('SELECT * FROM prihlasenie WHERE stanica_id = ? ORDER BY od').all(stationId) as unknown as SignInRow[]).map(toSignIn);
 }
 
-/** Signs the worker in at the station; a sign-in elsewhere moves here and that station forgets them as current worker. */
+/** Signs the worker in at the station (a repeated card scan refreshes `od`); a sign-in elsewhere moves here and that station forgets them as current worker. */
 export function signIn(db: Db, workerId: number, stationId: number, activity: Activity | null, at: number): void {
   db.prepare(
     `INSERT INTO prihlasenie (zamestnanec_id, stanica_id, cinnost, od) VALUES (?, ?, ?, ?)
      ON CONFLICT (zamestnanec_id) DO UPDATE SET
        cinnost = excluded.cinnost,
-       od = CASE WHEN prihlasenie.stanica_id = excluded.stanica_id THEN prihlasenie.od ELSE excluded.od END,
+       od = excluded.od,
        stanica_id = excluded.stanica_id`,
   ).run(workerId, stationId, activity, at);
   db.prepare('UPDATE stanica SET aktualny_zamestnanec_id = NULL WHERE aktualny_zamestnanec_id = ? AND id <> ?').run(workerId, stationId);
