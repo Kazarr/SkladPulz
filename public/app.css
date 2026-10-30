@@ -59,7 +59,9 @@ input, select, textarea { font: inherit; padding: 6px 8px; border: 1px solid var
 
 table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; font-variant-numeric: tabular-nums; }
 th, td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
-th { background: #eef1f5; font-size: 13px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+th { background: #eef1f5; font-size: 13px; color: var(--muted); font-weight: 600; }
+/* Wide report tables scroll inside the page instead of widening it. */
+.table-scroll { overflow-x: auto; }
 td.num, th.num { text-align: right; }
 tr.warn td { background: var(--warn-bg); }
 tr.err td { background: var(--err-bg); }

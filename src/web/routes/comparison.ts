@@ -66,7 +66,7 @@ function trend(change: number | null): string {
 function tableRow(c: Comparison, view: ComparisonView, r: ComparisonRow, isTeam: boolean): Html {
   const first = isTeam ? '' : view === 'pasma' ? (r.band ? BAND_LABEL[r.band] : '–') : (rankOf(c.rows, r) ?? '–');
   return html`<td>${first}</td><td>${r.workerName}</td>
-    <td class="num">${r.notes}</td><td class="num">${r.lines}</td><td class="num">${formatNumber(r.weightKg)}</td><td class="num">${formatSeconds(r.netSeconds)}</td>
+    <td class="num">${formatNumber(r.notes, 0)}</td><td class="num">${formatNumber(r.lines, 0)}</td><td class="num">${formatNumber(r.weightKg)}</td><td class="num">${formatSeconds(r.netSeconds)}</td>
     <td class="num">${formatNumber(r.notesPerHour)}</td><td class="num">${formatNumber(r.linesPerHour)}</td><td class="num">${formatNumber(r.kgPerHour)}</td>
     <td class="num">${formatSeconds(r.avgSecondsPerNote)}</td><td class="num">${formatSeconds(r.avgSecondsPerLine)}</td>
     <td class="num">${formatPercent(r.index)}</td><td class="num">${formatPercent(r.linesPerHourDeviation, 1, true)}</td><td class="num">${formatPercent(r.indexDeviation, 1, true)}</td>

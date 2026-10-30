@@ -15,7 +15,7 @@ const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;'
 const HEAD = ['Zamestnanec', 'DL', 'Položky', 'kg', 'Čistý čas', 'DL / hod', 'Položky / hod', 'kg / hod'];
 
 function cells(r: SummaryRow): string[] {
-  return [r.workerName, String(r.notes), String(r.lines), formatNumber(r.weightKg), formatSeconds(r.netSeconds), formatNumber(r.notesPerHour), formatNumber(r.linesPerHour), formatNumber(r.kgPerHour)];
+  return [r.workerName, formatNumber(r.notes, 0), formatNumber(r.lines, 0), formatNumber(r.weightKg), formatSeconds(r.netSeconds), formatNumber(r.notesPerHour), formatNumber(r.linesPerHour), formatNumber(r.kgPerHour)];
 }
 
 const TD = 'padding:4px 8px;border-bottom:1px solid #ddd;';

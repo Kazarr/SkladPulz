@@ -49,7 +49,7 @@ function tags(r: ReportRecord): Html {
 
 function summaryRow(r: SummaryRow): Html {
   return html`<td>${r.workerName}</td>
-    <td class="num">${r.notes}</td><td class="num">${r.lines}</td><td class="num">${formatNumber(r.units, 0)}</td><td class="num">${formatNumber(r.weightKg)}</td>
+    <td class="num">${formatNumber(r.notes, 0)}</td><td class="num">${formatNumber(r.lines, 0)}</td><td class="num">${formatNumber(r.units, 0)}</td><td class="num">${formatNumber(r.weightKg)}</td>
     <td class="num">${formatSeconds(r.netSeconds)}</td>
     <td class="num">${formatNumber(r.notesPerHour)}</td><td class="num">${formatNumber(r.linesPerHour)}</td><td class="num">${formatNumber(r.kgPerHour)}</td>
     <td class="num">${formatSeconds(r.avgSecondsPerNote)}</td><td class="num">${formatSeconds(r.avgSecondsPerLine)}</td>
