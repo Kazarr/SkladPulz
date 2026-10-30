@@ -98,7 +98,16 @@ export function createOnixSource(query: QueryFn, config: OnixConfig, opts: OnixS
     },
     async fetchByNumber(number) {
       const rows = await query(`${select} WHERE ns_number = $1 ORDER BY id_master DESC LIMIT 1`, [number]);
-      return parse(rows)[0] ?? null;
+      const row = rows[0];
+      if (!row) return null;
+      try {
+        return toNote(row);
+      } catch (e) {
+        if (!(e instanceof BadRow)) throw e;
+        opts.onBadRow?.(`ONIX row ${JSON.stringify(row['ns_number'])} skipped: ${e.message}`);
+        // The number exists in ONIX but its row is unusable: that is "cannot verify", not "unknown number".
+        throw new Error(`ONIX row for delivery note ${number} is unusable: ${e.message}`);
+      }
     },
   };
 }
