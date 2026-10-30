@@ -94,4 +94,20 @@ export const MIGRATIONS: readonly string[] = [
     SELECT * FROM zaznam
     WHERE stav IN ('ok', 'opravene') AND (podozrenie IS NULL OR potvrdene = 1);
   `,
+  // Correction log (#11): one row per changed field and one per action; never changed, never deleted.
+  `
+  CREATE TABLE oprava_zaznamu (
+    id            INTEGER PRIMARY KEY,
+    zaznam_id     INTEGER NOT NULL REFERENCES zaznam(id),
+    cas           INTEGER NOT NULL,
+    veduci        TEXT NOT NULL,
+    pole          TEXT NOT NULL,
+    stara_hodnota TEXT,
+    nova_hodnota  TEXT,
+    dovod         TEXT NOT NULL
+  );
+  CREATE INDEX oprava_zaznamu_zaznam ON oprava_zaznamu(zaznam_id, id);
+  CREATE TRIGGER oprava_zaznamu_bez_upravy BEFORE UPDATE ON oprava_zaznamu BEGIN SELECT RAISE(ABORT, 'Log opráv sa nemení.'); END;
+  CREATE TRIGGER oprava_zaznamu_bez_mazania BEFORE DELETE ON oprava_zaznamu BEGIN SELECT RAISE(ABORT, 'Log opráv sa nemaže.'); END;
+  `,
 ];

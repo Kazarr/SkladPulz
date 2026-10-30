@@ -83,7 +83,8 @@ test('a refused correction shows the message, keeps the typed values and stores 
   assert.match(text, /DL-NEXT/);
   assert.match(text, /value="2026-10-14T08:35:00"/);
   assert.match(text, /Môj dôvod/);
-  for (const over of [{ end: 'zajtra' }, { start: '' }, { worker: 'abc' }, { activity: 'XYZ' }, { reason: '' }, { end: '2026-10-14T13:00:00' }, { akcia: 'zmaz' }]) {
+  const cases: Record<string, string>[] = [{ end: 'zajtra' }, { start: '' }, { worker: 'abc' }, { activity: 'XYZ' }, { reason: '' }, { end: '2026-10-14T13:00:00' }, { akcia: 'zmaz' }];
+  for (const over of cases) {
     assert.equal((await bad(over)).status, 400, JSON.stringify(over));
   }
   assert.equal((await post('/zaznam/999', { akcia: 'vylucit', reason: 'x' })).status, 404);
