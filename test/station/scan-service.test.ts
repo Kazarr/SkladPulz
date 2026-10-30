@@ -165,6 +165,39 @@ test('a note already done by someone else with the same activity starts with a d
   assert.equal((await handleScan(env, env.pick, 'DL1')).outcome, 'ok');
 });
 
+test('when a second worker starts the same note and activity, both records are flagged as duplicates; excluded ones and other activities are not', async () => {
+  const env = setup();
+  await handleScan(env, env.pack, 'Z0001');
+  await handleScan(env, env.pack, 'DL1');
+  await handleScan(env, env.pack, 'C-KONIEC');
+  await handleScan(env, env.pack, 'DL2');
+  await handleScan(env, env.pack, 'Z0002');
+  await handleScan(env, env.pack, 'DL1');
+  const flags = () => records(env).map((r) => [r['cislo_dl'], r['zamestnanec_id'], r['duplicita']]);
+  assert.deepEqual(flags(), [['DL1', env.jan, 1], ['DL2', env.jan, 0], ['DL1', env.eva, 1]]);
+
+  // A running earlier record is flagged too.
+  await handleScan(env, env.pick, 'Z0001');
+  await handleScan(env, env.pick, 'C-VYCH');
+  await handleScan(env, env.pick, 'DL3');
+  await handleScan(env, env.pick, 'Z0002');
+  await handleScan(env, env.pick, 'C-VYCH');
+  await handleScan(env, env.pick, 'DL3');
+  assert.deepEqual(records(env).filter((r) => r['cislo_dl'] === 'DL3').map((r) => r['duplicita']), [1, 1]);
+});
+
+test('an excluded earlier record is not touched when another worker starts the same note', async () => {
+  const env = setup();
+  await handleScan(env, env.pack, 'Z0001');
+  await handleScan(env, env.pack, 'DL1');
+  await handleScan(env, env.pack, 'C-KONIEC');
+  env.db.prepare("UPDATE zaznam SET stav = 'vylucene' WHERE id = 1").run();
+  await handleScan(env, env.pack, 'Z0002');
+  const res = await handleScan(env, env.pack, 'DL1');
+  assert.equal(res.outcome, 'ok');
+  assert.deepEqual(records(env).map((r) => r['duplicita']), [0, 0]);
+});
+
 test('an unknown note is fetched from ONIX on demand; one ONIX does not know is refused in red', async () => {
   const env = setup();
   env.source.add(note('DL900', { customer: 'Nový odberateľ', lines: 40 }));
