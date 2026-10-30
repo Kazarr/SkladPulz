@@ -3,8 +3,9 @@ import { html } from 'hono/html';
 import type { AppDeps, AppEnv } from '../app.ts';
 import { page } from '../layout.ts';
 import { ACTIVITIES, type Activity } from '../../config.ts';
+import { reviewReasons, type ReviewReason } from '../../domain/record.ts';
 import { ACTIVITY_LABEL } from '../../domain/station.ts';
-import { confirmRecord, correctRecord, excludeRecord, listCorrectionLog, listReviewItems, restoreRecord, type Result, type ReviewReason } from '../../store/corrections.ts';
+import { confirmRecord, correctRecord, excludeRecord, listCorrectionLog, listReviewItems, restoreRecord, type Result } from '../../store/corrections.ts';
 import { getRecord, type WorkRecord } from '../../store/records.ts';
 import { getWorker, listWorkers } from '../../store/workers.ts';
 import { addDays, formatDuration, isDate, localDate, localDateTime, localDayRange, localParts, localToEpoch, pad } from '../../time.ts';
@@ -20,6 +21,7 @@ const REASON_LABEL: Record<ReviewReason, string> = {
   kratky: 'Podozrivo krátky',
   dlhy: 'Podozrivo dlhý',
   duplicita: 'Duplicita',
+  chybaju_data: 'Chýbajú údaje DL z ONIXu',
 };
 const ACTION_LABEL: Record<string, string> = {
   oprava: 'Oprava',
@@ -115,7 +117,7 @@ export function correctionRoutes(deps: AppDeps): Hono<AppEnv> {
             <tbody>
               ${items.map(
                 (i) => html`<tr>
-                  <td>${i.reasons.map((x) => html`<span class="tag ${x === 'duplicita' ? 'warn' : 'err'}">${REASON_LABEL[x]}</span> `)}</td>
+                  <td>${i.reasons.map((x) => html`<span class="tag ${x === 'duplicita' || x === 'chybaju_data' ? 'warn' : 'err'}">${REASON_LABEL[x]}</span> `)}</td>
                   <td>${i.workerName}</td>
                   <td><span class="tag ${i.record.activity}">${ACTIVITY_LABEL[i.record.activity]}</span></td>
                   <td>${i.record.dlNumber}</td>
@@ -155,6 +157,9 @@ export function correctionRoutes(deps: AppDeps): Hono<AppEnv> {
           <tr><th>Čistý čas</th><td>${rec.netSeconds === null ? '—' : formatDuration(rec.netSeconds)}</td><th>Pauzy</th><td>${formatDuration(rec.pauseSeconds)}</td></tr>
         </tbody>
       </table>
+      ${reviewReasons(rec).includes('chybaju_data')
+        ? html`<p class="notice">Chýbajú údaje DL z ONIXu (položky, kusy, hmotnosť), preto sa záznam zatiaľ nepočíta. Údaje sa doplnia pri ďalšej synchronizácii. Ak záznam potvrdíte, počíta sa s 0 položkami a 0 kg.</p>`
+        : ''}
       ${rec.status === 'bezi'
         ? html`<p class="notice">Záznam práve beží. Upraviť ho možno až po ukončení pracovníkom.</p>`
         : html`<form method="post" action="/zaznam/${rec.id}" class="form">

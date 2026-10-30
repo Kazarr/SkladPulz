@@ -74,6 +74,47 @@ test('a record that ended while the note was unknown gets its snapshot when the 
   assert.deepEqual([r?.lines, r?.units, r?.weightKg], [6, 20, 12]);
 });
 
+function endedWithoutSnapshot(env: ReturnType<typeof testEnv>, worker: number, dl: string, minute: number): number {
+  const id = startRecord(env.db, { workerId: worker, stationId: null, activity: 'VYCH', dlNumber: dl, at: at('08:00') + minute * 60_000, duplicate: false });
+  endRecord(env.db, id, { at: at('08:00') + minute * 60_000 + 300_000, method: 'koniec', status: 'ok', limits: LIMITS });
+  return id;
+}
+
+test('a sync fetches by number the notes of ended records without a snapshot that are not in the active list', async () => {
+  const env = testEnv();
+  const worker = createWorker(env.db, 'Ján', 'Z0001').id;
+  const id = endedWithoutSnapshot(env, worker, 'OLD1', 0);
+  env.source.add(note('DL1'));
+  env.source.inactive.set('OLD1', note('OLD1', { lines: 7, units: 21, weightKg: 8 }));
+  assert.deepEqual(await syncActiveNotes(env.db, env.source, env.clock.t), { ok: true, count: 1 });
+  const r = getRecord(env.db, id);
+  assert.deepEqual([r?.lines, r?.units, r?.weightKg], [7, 21, 8]);
+  assert.deepEqual(active(env), ['DL1']); // the fetched note is cached as inactive
+  assert.equal(getNote(env.db, 'OLD1')?.lines, 7);
+  const calls = env.source.calls.length;
+  await syncActiveNotes(env.db, env.source, env.clock.advance(60));
+  assert.deepEqual(env.source.calls.slice(calls), ['active']); // nothing left to look up
+});
+
+test('at most 50 notes are looked up per run, newest records first; one that cannot be fetched does not fail the run', async () => {
+  const env = testEnv();
+  const worker = createWorker(env.db, 'Ján', 'Z0001').id;
+  env.source.add(note('DL1'));
+  const ids: number[] = [];
+  for (let i = 0; i < 52; i++) {
+    env.source.inactive.set(`OLD${i}`, note(`OLD${i}`, { lines: 3 }));
+    ids.push(endedWithoutSnapshot(env, worker, `OLD${i}`, i));
+  }
+  env.source.failFor.add('OLD51'); // the newest record's note throws
+  assert.equal((await syncActiveNotes(env.db, env.source, env.clock.t)).ok, true);
+  assert.equal(env.source.calls.filter((c) => c !== 'active').length, 50);
+  const filled = ids.filter((id) => getRecord(env.db, id)?.lines === 3).length;
+  assert.equal(filled, 49); // 50 looked up, one of them failed
+  env.source.failFor.clear();
+  await syncActiveNotes(env.db, env.source, env.clock.advance(60));
+  assert.equal(ids.filter((id) => getRecord(env.db, id)?.lines === 3).length, 52);
+});
+
 test('an empty list from ONIX changes nothing and is reported as a failed run', async () => {
   const env = testEnv();
   env.source.add(note('DL1'));

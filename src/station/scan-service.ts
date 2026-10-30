@@ -4,7 +4,7 @@ import { classifyScan, normalizeScan, type ScannedCode } from '../domain/scan-co
 import { decideScan, type DeliveryNoteLookup, type Effect, type Outcome } from '../domain/station.ts';
 import { withTimeout, type DeliveryNoteSource } from '../onix/source.ts';
 import { getNote, upsertNote } from '../store/delivery-notes.ts';
-import { endPause, endRecord, getRunningRecord, listPauses, otherWorkersOnNote, startPause, startRecord } from '../store/records.ts';
+import { endPause, endRecord, getRunningRecord, listPauses, priorWorkOnNote, startPause, startRecord } from '../store/records.ts';
 import { logScan } from '../store/scan-log.ts';
 import { getSignIn, getStation, listSignInsAt, setActivity, setStationWorker, signIn, signOut } from '../store/stations.ts';
 import { findWorkerByCode, getWorker } from '../store/workers.ts';
@@ -134,7 +134,7 @@ export async function handleScan(deps: ScanDeps, stationId: number, raw: string)
       signedInHere: signIn?.stationId === station.id,
       running: running ? { id: running.id, activity: running.activity, dlNumber: running.dlNumber, paused: running.paused } : null,
       ...(scan.kind === 'deliveryNote' && worker && activity
-        ? { lookup, doneByOthers: otherWorkersOnNote(db, scan.number, activity, worker.id) }
+        ? (({ others, own }) => ({ lookup, doneByOthers: others, doneByYou: own }))(priorWorkOnNote(db, scan.number, activity, worker.id))
         : {}),
       repeatScanEnds: deps.config.repeatScanEnds,
     });

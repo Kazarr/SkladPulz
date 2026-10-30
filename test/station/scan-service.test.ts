@@ -165,6 +165,89 @@ test('a note already done by someone else with the same activity starts with a d
   assert.equal((await handleScan(env, env.pick, 'DL1')).outcome, 'ok');
 });
 
+test('when a second worker starts the same note and activity, both records are flagged as duplicates; excluded ones and other activities are not', async () => {
+  const env = setup();
+  await handleScan(env, env.pack, 'Z0001');
+  await handleScan(env, env.pack, 'DL1');
+  await handleScan(env, env.pack, 'C-KONIEC');
+  await handleScan(env, env.pack, 'DL2');
+  await handleScan(env, env.pack, 'Z0002');
+  await handleScan(env, env.pack, 'DL1');
+  const flags = () => records(env).map((r) => [r['cislo_dl'], r['zamestnanec_id'], r['duplicita']]);
+  assert.deepEqual(flags(), [['DL1', env.jan, 1], ['DL2', env.jan, 0], ['DL1', env.eva, 1]]);
+
+  // A running earlier record is flagged too.
+  await handleScan(env, env.pick, 'Z0001');
+  await handleScan(env, env.pick, 'C-VYCH');
+  await handleScan(env, env.pick, 'DL3');
+  await handleScan(env, env.pick, 'Z0002');
+  await handleScan(env, env.pick, 'C-VYCH');
+  await handleScan(env, env.pick, 'DL3');
+  assert.deepEqual(records(env).filter((r) => r['cislo_dl'] === 'DL3').map((r) => r['duplicita']), [1, 1]);
+});
+
+test('an excluded earlier record is not touched when another worker starts the same note', async () => {
+  const env = setup();
+  await handleScan(env, env.pack, 'Z0001');
+  await handleScan(env, env.pack, 'DL1');
+  await handleScan(env, env.pack, 'C-KONIEC');
+  env.db.prepare("UPDATE zaznam SET stav = 'vylucene' WHERE id = 1").run();
+  await handleScan(env, env.pack, 'Z0002');
+  const res = await handleScan(env, env.pack, 'DL1');
+  assert.equal(res.outcome, 'ok');
+  assert.deepEqual(records(env).map((r) => r['duplicita']), [0, 0]);
+});
+
+test('scanning a note you already finished with the same activity warns, and the new record is a duplicate that does not count', async () => {
+  const env = setup();
+  await handleScan(env, env.pack, 'Z0001');
+  await handleScan(env, env.pack, 'DL1');
+  env.clock.advance(120);
+  await handleScan(env, env.pack, 'C-KONIEC');
+  env.clock.advance(60);
+  const again = await handleScan(env, env.pack, 'DL1');
+  assert.equal(again.outcome, 'upozornenie');
+  assert.match(again.message, /tento DL ste už zabalili/);
+  assert.equal(again.view.current?.running?.dlNumber, 'DL1');
+  assert.deepEqual(records(env).map((r) => r['duplicita']), [0, 1]);
+  env.clock.advance(120);
+  await handleScan(env, env.pack, 'C-KONIEC');
+  const counted = env.db.prepare('SELECT id FROM zaznam_hodnotene').all() as { id: number }[];
+  assert.deepEqual(counted.map((r) => r.id), [1]);
+});
+
+test('re-scanning the note that is running still only says it runs; a note of another activity or an excluded record of your own is no duplicate', async () => {
+  const env = setup();
+  await handleScan(env, env.pack, 'Z0001');
+  await handleScan(env, env.pack, 'DL1');
+  const running = await handleScan(env, env.pack, 'DL1');
+  assert.match(running.message, /už beží/);
+  assert.equal(records(env).length, 1);
+  await handleScan(env, env.pack, 'C-KONIEC');
+  env.db.prepare("UPDATE zaznam SET stav = 'vylucene' WHERE id = 1").run();
+  assert.equal((await handleScan(env, env.pack, 'DL1')).outcome, 'ok');
+  await handleScan(env, env.pack, 'C-KONIEC');
+  await handleScan(env, env.pack, 'C-VYCH');
+  assert.equal((await handleScan(env, env.pack, 'DL1')).outcome, 'ok');
+  assert.deepEqual(records(env).map((r) => r['duplicita']), [0, 0, 0]);
+});
+
+test('a record that ended while ONIX was down gets its snapshot when a later lookup fetches the note', async () => {
+  const env = setup();
+  env.source.add(note('DL900', { lines: 40, units: 90, weightKg: 123 }));
+  env.source.down = true;
+  await handleScan(env, env.pack, 'Z0001');
+  assert.equal((await handleScan(env, env.pack, 'DL900')).outcome, 'upozornenie');
+  env.clock.advance(60);
+  await handleScan(env, env.pack, 'C-KONIEC');
+  assert.equal(getRecord(env.db, 1)?.lines, null);
+  env.source.down = false;
+  await handleScan(env, env.pack, 'Z0002');
+  await handleScan(env, env.pack, 'DL900');
+  const r = getRecord(env.db, 1);
+  assert.deepEqual([r?.lines, r?.units, r?.weightKg], [40, 90, 123]);
+});
+
 test('an unknown note is fetched from ONIX on demand; one ONIX does not know is refused in red', async () => {
   const env = setup();
   env.source.add(note('DL900', { customer: 'Nový odberateľ', lines: 40 }));

@@ -116,10 +116,10 @@ test('a missing weight stays null (cards without a weight are an open question, 
   assert.equal((await source.fetchActive())[0]?.weightKg, null);
 });
 
-test('fetchByNumber reports a malformed row and answers null', async () => {
+test('fetchByNumber reports a malformed row and throws, so the caller cannot mistake it for an unknown number', async () => {
   const bad: string[] = [];
   const source = createOnixSource(fakeQuery({ ...good, hmotnost_kg: 'abc' }), buildConfig().onix, { onBadRow: (p) => bad.push(p) });
-  assert.equal(await source.fetchByNumber('DL-7'), null);
+  await assert.rejects(source.fetchByNumber('DL-7'), /hmotnost_kg/);
   assert.equal(bad.length, 1);
 });
 

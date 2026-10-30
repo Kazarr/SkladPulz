@@ -32,7 +32,7 @@ test('the test send mails the chosen day at once without marking it as sent', as
   assert.match(await (await app.request('/email/nahlad?datum=2026-10-14')).text(), /skúšobný/);
   // the scheduler still sends the real one
   const { sendDueSummaries } = await import('../../src/email/scheduler.ts');
-  await sendDueSummaries(env.db, env.config, at('22:15'), t);
+  await sendDueSummaries(env.db, env.config, at('22:31'), t);
   assert.equal(t.sent.length, 2);
 });
 

@@ -2,7 +2,8 @@ import { ACTIVITIES, type Activity } from '../config.ts';
 import type { Db } from '../db/db.ts';
 import type { EndMethod, RecordStatus } from '../store/records.ts';
 import { listCountedDayRecords, listDayRecords, type ReportRecord } from './queries.ts';
-import { DEFAULT_WEIGHTS, performanceIndex, type WeightsByActivity } from '../domain/index.ts';
+import { reviewReasons } from '../domain/record.ts';
+import { performanceIndex, type WeightsByActivity } from '../domain/index.ts';
 import { totalsByWorkerAndActivity, totalsOf, type Totals } from './metrics.ts';
 
 export type StatusFilter = RecordStatus | 'kontrola';
@@ -10,7 +11,7 @@ export type StatusFilter = RecordStatus | 'kontrola';
 export interface ReportFilter {
   workerId: number | null;
   activity: Activity | null;
-  /** `kontrola` = records waiting for a manager: unfinished or suspect and not confirmed. */
+  /** `kontrola` = records waiting for a manager (`reviewReasons`). */
   status: StatusFilter | null;
 }
 
@@ -62,7 +63,7 @@ export function isSuspectUnconfirmed(r: ReportRecord): boolean {
 }
 
 export function needsReview(r: ReportRecord): boolean {
-  return r.status === 'neukoncene' || isSuspectUnconfirmed(r);
+  return reviewReasons(r).length > 0;
 }
 
 export interface RecordTag {
@@ -76,13 +77,14 @@ export function recordTags(r: ReportRecord): RecordTag[] {
   if (r.status === 'neukoncene') tags.push({ label: 'neukončený', kind: 'err' });
   if (r.suspicion) tags.push({ label: SUSPICION_LABEL[r.suspicion], kind: r.confirmed ? 'ok' : 'warn' });
   if (r.duplicate) tags.push({ label: 'duplicita', kind: 'warn' });
+  if (reviewReasons(r).includes('chybaju_data')) tags.push({ label: 'chýbajú údaje DL', kind: 'warn' });
   return tags;
 }
 
 /** CSS class of a record's table row. */
 export function recordRowClass(r: ReportRecord): 'err' | 'warn' | '' {
   if (r.status === 'neukoncene') return 'err';
-  return isSuspectUnconfirmed(r) || r.duplicate ? 'warn' : '';
+  return isSuspectUnconfirmed(r) || r.duplicate || reviewReasons(r).includes('chybaju_data') ? 'warn' : '';
 }
 
 function matchesStatus(r: ReportRecord, status: StatusFilter | null): boolean {
@@ -90,11 +92,12 @@ function matchesStatus(r: ReportRecord, status: StatusFilter | null): boolean {
   return status === 'kontrola' ? needsReview(r) : r.status === status;
 }
 
-export function buildDailyReport(db: Db, tz: string, date: string, filter: ReportFilter, weights: WeightsByActivity = DEFAULT_WEIGHTS): DailyReport {
+export function buildDailyReport(db: Db, tz: string, date: string, filter: ReportFilter, weights: WeightsByActivity): DailyReport {
   const all = listDayRecords(db, tz, date, filter);
   // The index is relative to the whole team, also when the list is filtered to one worker.
   const team = listCountedDayRecords(db, tz, date, { workerId: null, activity: filter.activity });
   const counted = filter.workerId === null ? team : team.filter((r) => r.workerId === filter.workerId);
+  const teamAll = filter.workerId === null ? all : listDayRecords(db, tz, date, { workerId: null, activity: filter.activity });
   const names = new Map(all.map((r) => [r.workerId, r.workerName]));
   const sections: DailySection[] = [];
   for (const activity of ACTIVITIES) {
@@ -118,11 +121,12 @@ export function buildDailyReport(db: Db, tz: string, date: string, filter: Repor
     });
     rows.sort((a, b) => a.workerName.localeCompare(b.workerName, 'sk'));
     const total: SummaryRow = {
-      ...totalsOf(countedHere),
-      index: performanceIndex(w, countedHere, teamHere),
+      // The whole team, also when the list is filtered to one worker.
+      ...totalsOf(teamHere),
+      index: performanceIndex(w, teamHere, teamHere),
       workerName: 'Tím spolu',
-      unfinished: rows.reduce((n, r) => n + r.unfinished, 0),
-      suspect: rows.reduce((n, r) => n + r.suspect, 0),
+      unfinished: teamAll.filter((r) => r.activity === activity && r.status === 'neukoncene').length,
+      suspect: teamAll.filter((r) => r.activity === activity && isSuspectUnconfirmed(r)).length,
     };
     sections.push({ activity, rows, total });
   }

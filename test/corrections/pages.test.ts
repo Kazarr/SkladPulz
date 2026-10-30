@@ -130,3 +130,17 @@ test('without managers the corrections still work and the log names no signed-in
   assert.equal(res.status, 303);
   assert.equal(listCorrectionLog(env.db, id)[0]?.manager, '(bez prihlásenia)');
 });
+
+test('a record without a snapshot waits on /kontrola with its reason; the page says what confirming does; confirming counts it with 0 lines', async () => {
+  const { env, get, post, ján } = await managerApp();
+  const id = seed(env.db, { worker: ján, dl: 'DL-NODATA', start: at('08:00'), lines: null });
+  assert.deepEqual(counted(env.db), []);
+  assert.ok((await (await get('/kontrola')).text()).includes('Chýbajú údaje DL z ONIXu'));
+  const page = await (await get(`/zaznam/${id}`)).text();
+  assert.match(page, /počíta sa s 0 položkami a 0 kg/);
+  assert.match(page, /value="potvrdit"/);
+  assert.equal((await post(`/zaznam/${id}`, { akcia: 'potvrdit', reason: 'Údaje neexistujú' })).status, 303);
+  assert.deepEqual(counted(env.db), [id]);
+  assert.doesNotMatch(await (await get('/kontrola')).text(), /DL-NODATA/);
+  assert.doesNotMatch(await (await get(`/zaznam/${id}`)).text(), /počíta sa s 0 položkami/);
+});

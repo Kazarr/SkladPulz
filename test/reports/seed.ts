@@ -13,7 +13,8 @@ export interface SeedRecord {
   /** Net seconds (default 600). */
   net?: number;
   pause?: number;
-  lines?: number;
+  /** Snapshot line count (default 5); null = the note's details were never known. */
+  lines?: number | null;
   units?: number;
   kg?: number;
   stav?: 'bezi' | 'ok' | 'neukoncene' | 'opravene' | 'vylucene';
@@ -43,7 +44,7 @@ export function addRecord(db: Db, o: SeedRecord): number {
       end,
       pause,
       stav === 'bezi' ? null : net,
-      o.lines ?? 5,
+      o.lines === undefined ? 5 : o.lines,
       o.units ?? 10,
       o.kg ?? 2.5,
       stav === 'bezi' ? null : (o.method ?? 'koniec'),

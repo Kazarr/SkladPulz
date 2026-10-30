@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import ExcelJS from 'exceljs';
 import { createApp } from '../../src/web/app.ts';
+import { DEFAULT_WEIGHTS } from '../../src/domain/index.ts';
 import { buildDailyReport, type ReportFilter } from '../../src/reports/daily.ts';
 import { upsertNote } from '../../src/store/delivery-notes.ts';
 import { localDayRange } from '../../src/time.ts';
@@ -25,7 +26,7 @@ test('only counted records enter the summary; the others stay in the list and ar
   const suspect = addRecord(env.db, { worker: a, start: at('12:00'), net: 5, podozrenie: 'kratky' });
   const corrected = addRecord(env.db, { worker: a, start: at('13:00'), net: 300, lines: 2, kg: 1, stav: 'opravene' });
 
-  const report = buildDailyReport(env.db, TZ, D, NO_FILTER);
+  const report = buildDailyReport(env.db, TZ, D, NO_FILTER, DEFAULT_WEIGHTS);
   assert.deepEqual(ids(report), [counted, confirmed, unfinished, excluded, suspect, corrected]);
   const vych = report.sections.find((s) => s.activity === 'VYCH');
   assert.equal(vych?.rows.length, 1);
@@ -45,7 +46,7 @@ test('a worker with only unfinished records still gets a summary row, without sp
   const env = testEnv();
   const a = addWorker(env.db, 'Anna', 'Z0001');
   addRecord(env.db, { worker: a, start: at('08:00'), stav: 'neukoncene', method: 'koniec_zmeny' });
-  const row = buildDailyReport(env.db, TZ, D, NO_FILTER).sections[0]?.rows[0];
+  const row = buildDailyReport(env.db, TZ, D, NO_FILTER, DEFAULT_WEIGHTS).sections[0]?.rows[0];
   assert.equal(row?.notes, 0);
   assert.equal(row?.notesPerHour, null);
   assert.equal(row?.unfinished, 1);
@@ -57,9 +58,9 @@ test('a record belongs to the local day it started on, even when it ends after m
   const late = addRecord(env.db, { worker: a, start: at('23:50'), net: 1200 });
   const midnight = addRecord(env.db, { worker: a, start: at('00:00', '2026-10-15') });
   const before = addRecord(env.db, { worker: a, start: at('23:59', '2026-10-13') });
-  assert.deepEqual(ids(buildDailyReport(env.db, TZ, D, NO_FILTER)), [late]);
-  assert.deepEqual(ids(buildDailyReport(env.db, TZ, '2026-10-15', NO_FILTER)), [midnight]);
-  assert.deepEqual(ids(buildDailyReport(env.db, TZ, '2026-10-13', NO_FILTER)), [before]);
+  assert.deepEqual(ids(buildDailyReport(env.db, TZ, D, NO_FILTER, DEFAULT_WEIGHTS)), [late]);
+  assert.deepEqual(ids(buildDailyReport(env.db, TZ, '2026-10-15', NO_FILTER, DEFAULT_WEIGHTS)), [midnight]);
+  assert.deepEqual(ids(buildDailyReport(env.db, TZ, '2026-10-13', NO_FILTER, DEFAULT_WEIGHTS)), [before]);
 });
 
 test('the 25-hour day of the autumn time change holds all 25 hours', () => {
@@ -71,9 +72,9 @@ test('the 25-hour day of the autumn time change holds all 25 hours', () => {
   const lastHour = addRecord(env.db, { worker: a, start: range.to - 1000 });
   const beforeDay = addRecord(env.db, { worker: a, start: range.from - 1000 });
   const nextDay = addRecord(env.db, { worker: a, start: range.to });
-  assert.deepEqual(ids(buildDailyReport(env.db, TZ, '2026-10-25', NO_FILTER)), [first, lastHour]);
-  assert.deepEqual(ids(buildDailyReport(env.db, TZ, '2026-10-24', NO_FILTER)), [beforeDay]);
-  assert.deepEqual(ids(buildDailyReport(env.db, TZ, '2026-10-26', NO_FILTER)), [nextDay]);
+  assert.deepEqual(ids(buildDailyReport(env.db, TZ, '2026-10-25', NO_FILTER, DEFAULT_WEIGHTS)), [first, lastHour]);
+  assert.deepEqual(ids(buildDailyReport(env.db, TZ, '2026-10-24', NO_FILTER, DEFAULT_WEIGHTS)), [beforeDay]);
+  assert.deepEqual(ids(buildDailyReport(env.db, TZ, '2026-10-26', NO_FILTER, DEFAULT_WEIGHTS)), [nextDay]);
 });
 
 test('each filter leaves out a row it must leave out', () => {
@@ -88,7 +89,7 @@ test('each filter leaves out a row it must leave out', () => {
   const confirmed = addRecord(env.db, { worker: b, start: at('13:00'), net: 5, podozrenie: 'kratky', potvrdene: true });
   const excluded = addRecord(env.db, { worker: b, start: at('14:00'), stav: 'vylucene' });
   const running = addRecord(env.db, { worker: a, start: at('15:00'), stav: 'bezi' });
-  const run = (f: Partial<ReportFilter>) => ids(buildDailyReport(env.db, TZ, D, { ...NO_FILTER, ...f }));
+  const run = (f: Partial<ReportFilter>) => ids(buildDailyReport(env.db, TZ, D, { ...NO_FILTER, ...f }, DEFAULT_WEIGHTS));
 
   assert.deepEqual(run({ workerId: a }), [annaPick, annaPack, running]);
   assert.deepEqual(run({ activity: 'BAL' }), [annaPack]);
@@ -108,8 +109,24 @@ test('worker and activity filters also narrow the summary', () => {
   addRecord(env.db, { worker: a, start: at('08:00') });
   addRecord(env.db, { worker: b, start: at('09:00') });
   addRecord(env.db, { worker: b, start: at('10:00'), activity: 'BAL' });
-  const only = buildDailyReport(env.db, TZ, D, { ...NO_FILTER, workerId: b, activity: 'VYCH' });
+  const only = buildDailyReport(env.db, TZ, D, { ...NO_FILTER, workerId: b, activity: 'VYCH' }, DEFAULT_WEIGHTS);
   assert.deepEqual(only.sections.map((s) => [s.activity, s.rows.map((r) => r.workerName)]), [['VYCH', ['Boris']]]);
+});
+
+test('the team row stays the whole team under a worker filter: totals, index and review counts', () => {
+  const env = testEnv();
+  const a = addWorker(env.db, 'Anna', 'Z0001');
+  const b = addWorker(env.db, 'Boris', 'Z0002');
+  addRecord(env.db, { worker: a, start: at('08:00'), net: 600, lines: 4, dl: 'DL1' });
+  addRecord(env.db, { worker: b, start: at('09:00'), net: 600, lines: 6, dl: 'DL2' });
+  addRecord(env.db, { worker: b, start: at('10:00'), stav: 'neukoncene', method: 'koniec_zmeny', dl: 'DL3' });
+  addRecord(env.db, { worker: b, start: at('11:00'), net: 5, podozrenie: 'kratky', dl: 'DL4' });
+  const all = buildDailyReport(env.db, TZ, D, NO_FILTER, DEFAULT_WEIGHTS).sections[0]?.total;
+  const only = buildDailyReport(env.db, TZ, D, { ...NO_FILTER, workerId: a }, DEFAULT_WEIGHTS).sections[0];
+  assert.deepEqual(only?.rows.map((r) => r.workerName), ['Anna']);
+  assert.equal(only?.total.notes, 2);
+  assert.equal(only?.total.lines, 10);
+  assert.deepEqual(only?.total, all);
 });
 
 test('the day page shows the summary in Slovak number format, highlights rows and links to the DL detail', async () => {
@@ -119,7 +136,7 @@ test('the day page shows the summary in Slovak number format, highlights rows an
   addRecord(env.db, { worker: a, start: at('09:00'), stav: 'neukoncene', method: 'koniec_zmeny', dl: 'DL2' });
   addRecord(env.db, { worker: a, start: at('10:00'), net: 5, podozrenie: 'kratky', dl: 'DL3' });
   addRecord(env.db, { worker: a, start: at('11:00'), podozrenie: 'dlhy', net: 9000, dl: 'DL4' });
-  addRecord(env.db, { worker: a, start: at('12:00'), duplicita: true, dl: 'DL5' });
+  addRecord(env.db, { worker: a, start: at('12:00'), duplicita: true, potvrdene: true, dl: 'DL5' }); // a confirmed duplicate counts, an unconfirmed one does not
   const res = await createApp(env).request(`/prehlad?datum=${D}`);
   assert.equal(res.status, 200);
   const body = await res.text();

@@ -1,11 +1,14 @@
 import { transaction, type Db } from '../db/db.ts';
-import { getNote, upsertNote } from '../store/delivery-notes.ts';
+import { upsertNote, type DeliveryNote } from '../store/delivery-notes.ts';
 import { lastSyncRuns, recordSyncRun } from '../store/onix-sync.ts';
-import { backfillSnapshots } from '../store/records.ts';
+import { notesWithoutSnapshot } from '../store/records.ts';
 import { localDateTime } from '../time.ts';
 import type { DeliveryNoteSource } from './source.ts';
 
 export type SyncResult = { ok: true; count: number } | { ok: false; error: string };
+
+/** Notes of snapshot-less records looked up by number per run. */
+export const MAX_LOOKUPS_PER_RUN = 50;
 
 const EMPTY_LIST = 'ONIX vrátil prázdny zoznam DL; údaje sa nezmenili.';
 
@@ -15,7 +18,8 @@ const EMPTY_LIST = 'ONIX vrátil prázdny zoznam DL; údaje sa nezmenili.';
  *
  * - Notes missing from the list become inactive but stay cached; records keep their snapshot.
  * - An empty list changes nothing (safety fuse: a wrong filter or an ONIX hiccup must not deactivate every note).
- * - Records that ended before their note was known get their snapshot as soon as the note arrives.
+ * - Records that ended before their note was known get their snapshot as soon as the note arrives (`upsertNote`). Notes that are not
+ *   in the active list are fetched by number, at most `MAX_LOOKUPS_PER_RUN` per run, newest records first, and cached as inactive.
  * - Cache changes are one transaction: all or nothing.
  */
 export async function syncActiveNotes(db: Db, source: DeliveryNoteSource, now: number): Promise<SyncResult> {
@@ -30,11 +34,19 @@ export async function syncActiveNotes(db: Db, source: DeliveryNoteSource, now: n
     const numbers = new Set(notes.map((n) => n.number));
     transaction(db, () => {
       db.exec('UPDATE dodaci_list SET aktivny = 0 WHERE aktivny = 1');
-      for (const n of notes) {
-        const known = getNote(db, n.number)?.lines != null;
-        upsertNote(db, n, now, true);
-        if (!known && n.lines !== null) backfillSnapshots(db, n.number);
+      for (const n of notes) upsertNote(db, n, now, true);
+    });
+    const missing: DeliveryNote[] = [];
+    for (const number of notesWithoutSnapshot(db, MAX_LOOKUPS_PER_RUN).filter((n) => !numbers.has(n))) {
+      try {
+        const n = await source.fetchByNumber(number);
+        if (n) missing.push(n);
+      } catch {
+        // ponytail: a number that cannot be fetched (unknown, malformed row) is tried again next run; it can crowd out older ones only while 50 such numbers exist.
       }
+    }
+    transaction(db, () => {
+      for (const n of missing) upsertNote(db, n, now, false);
     });
     recordSyncRun(db, { at: now, ok: true, count: numbers.size, error: null });
     return { ok: true, count: numbers.size };

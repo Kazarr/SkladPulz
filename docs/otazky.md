@@ -11,11 +11,12 @@ Rozhodnutia, ktoré patria zákazníkovi (pravidlá prevádzky, jeho dáta). Ký
 | 5 | Ktoré DL sú „aktívne“ (stavy, druhy, dátum)? | Všetky stavy a druhy, nie staršie ako 30 dní. | `onix.activeStates`, `onix.documentTypes`, `onix.daysBack` |
 | 6 | Ktoré položky DL sú neskladové (doprava, služby)? | Počítajú sa len riadky so skladovou kartou (`id_stock_items` vyplnené); overiť na reálnej DB. | view `skl_aktivne_dl` |
 | 7 | Prepnutie činnosti počas rozpracovaného DL (napr. z vychystania na balenie)? | Rozpracovaný DL sa ukončí (`zmena_cinnosti`) a nová činnosť sa nastaví. | — |
-| 8 | Pípne pracovník DL, ktorý nie je v cache a ONIX je nedostupný? | Záznam sa začne s upozornením, údaje DL sa doplnia pri ďalšej synchronizácii. | — |
+| 8 | Pípne pracovník DL, ktorý nie je v cache a ONIX je nedostupný? | Záznam sa začne s upozornením, údaje DL sa doplnia pri ďalšej synchronizácii (každá synchronizácia dohľadá aj DL ukončených záznamov bez údajov, najviac 50 naraz). Kým chýbajú, záznam sa nepočíta a čaká na stránke Kontrola („Chýbajú údaje DL z ONIXu“); potvrdením sa počíta s 0 položkami a 0 kg. | — |
 | 9 | Majú skladníci vidieť poradie? | Porovnanie ponúka pásma (horných 30 % / stred / dolných 30 %) namiesto poradia. | prepínač v porovnaní |
 | 10 | Akú normu času má DL (váhy výkonového indexu)? | Zástupné: vychystanie 60 s + 25 s/položka + 0,5 s/kg, balenie 45 s + 12 s/položka + 0,8 s/kg. Po 2–4 týždňoch sa nastavia z dát („Vypočítať z dát“). Index zatiaľ nie je podkladom pre prémie. | stránka Index |
 | 11 | Ako sa delia pásma pri malom tíme a pri rovnakom indexe? | 30 % pracovníkov (zaokrúhlené nadol pri polovici) je hore, 30 % dole, zvyšok v strede; 1 pracovník je v strede; skupina s rovnakým indexom, ktorá zasahuje do dvoch pásiem, ide celá do stredu. Predvolené zobrazenie je poradie, pásma sú prepínač. | prepínač v porovnaní |
 | 12 | S čím sa porovnáva trend? | Deň, týždeň a vlastný rozsah s obdobím rovnakej dĺžky tesne predtým, mesiac s predchádzajúcim kalendárnym mesiacom. Trend sa počíta z rýchlostí a indexu, nie zo súčtov. | — |
+| 13 | Robí jeden DL niekedy viac ľudí? (otázka z #1) | Nie. Keď ten istý DL s tou istou činnosťou začne druhý pracovník, oba záznamy (aj skorší) sa označia ako duplicita a nepočítajú sa, kým vedúci na stránke Kontrola jeden nepotvrdí a druhý nevylúči. Pracovník, ktorý pípne DL, ktorý už sám ukončil s tou istou činnosťou, dostane oranžové upozornenie „tento DL ste už …“ a nový záznam je tiež duplicita (skorší ostáva, ako bol). | — |
 
 ## Technické predpoklady
 

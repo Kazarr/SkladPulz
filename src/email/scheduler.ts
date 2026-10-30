@@ -1,6 +1,7 @@
 import type { Config } from '../config.ts';
 import type { Db } from '../db/db.ts';
 import { lastShiftEnd } from '../domain/shifts.ts';
+import { closeExpiredRecords } from '../station/auto-close.ts';
 import { addDays, localDate } from '../time.ts';
 import { buildDailySummary } from './daily-summary.ts';
 import type { MailTransport } from './transport.ts';
@@ -37,6 +38,8 @@ export async function sendSummary(db: Db, config: Config, date: string, now: num
   const recipients = config.email.recipients;
   let error: string | null = null;
   try {
+    // Forgotten records are closed as neukoncene first, so the review count of the mail is complete.
+    closeExpiredRecords(db, config, now);
     await transport.send(await buildDailySummary(db, config, date));
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
@@ -46,16 +49,18 @@ export async function sendSummary(db: Db, config: Config, date: string, now: num
 }
 
 /**
- * Sends the summary of yesterday and of today once each is due: `lastShiftEnd + delayMin` has passed.
+ * Sends the summary of yesterday and of today once each is due: `lastShiftEnd + max(delayMin, autoCloseGraceMin + 1)` minutes have passed,
+ * i.e. never before forgotten records are auto-closed.
  * ponytail: only yesterday and today are considered, so a server that was off for days sends no backlog.
  */
 export async function sendDueSummaries(db: Db, config: Config, now: number, transport: MailTransport): Promise<SendLogEntry[]> {
-  const { enabled, recipients, delayMin } = config.email;
+  const { enabled, recipients } = config.email;
+  const waitMin = Math.max(config.email.delayMin, config.autoCloseGraceMin + 1);
   if (!enabled || recipients.length === 0) return [];
   const today = localDate(now, config.timezone);
   const sent: SendLogEntry[] = [];
   for (const date of [addDays(today, -1), today]) {
-    if (now < lastShiftEnd(date, config.shifts, config.timezone) + delayMin * 60_000) continue;
+    if (now < lastShiftEnd(date, config.shifts, config.timezone) + waitMin * 60_000) continue;
     const counts = db.prepare('SELECT coalesce(sum(ok), 0) AS ok, count(*) - coalesce(sum(ok), 0) AS failed FROM email_odoslanie WHERE den = ? AND skusobny = 0').get(date) as { ok: number; failed: number };
     if (counts.ok > 0 || counts.failed >= MAX_FAILURES) continue;
     sent.push(await sendSummary(db, config, date, now, transport, false));
