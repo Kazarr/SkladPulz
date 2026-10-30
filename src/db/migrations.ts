@@ -94,4 +94,14 @@ export const MIGRATIONS: readonly string[] = [
     SELECT * FROM zaznam
     WHERE stav IN ('ok', 'opravene') AND (podozrenie IS NULL OR potvrdene = 1);
   `,
+  `
+  -- One row per ONIX synchronisation run (#3), so the home page can show when ONIX was last read and whether it failed.
+  CREATE TABLE onix_synchronizacia (
+    id      INTEGER PRIMARY KEY,
+    cas     INTEGER NOT NULL,
+    uspesna INTEGER NOT NULL CHECK (uspesna IN (0, 1)),
+    pocet   INTEGER,
+    chyba   TEXT
+  );
+  `,
 ];

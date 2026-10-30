@@ -14,7 +14,8 @@
     "verify": "npm run typecheck && npm test",
     "e2e": "npm run build && playwright test",
     "smoke": "node src/tools/smoke.ts",
-    "backup": "node --disable-warning=ExperimentalWarning src/tools/backup.ts"
+    "backup": "node --disable-warning=ExperimentalWarning src/tools/backup.ts",
+    "onix:check": "node --disable-warning=ExperimentalWarning src/tools/onix-check.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",

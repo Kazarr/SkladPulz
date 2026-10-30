@@ -1,7 +1,7 @@
 import type { DeliveryNote } from '../store/delivery-notes.ts';
 
 /**
- * Where delivery notes come from. Production reads ONIX (src/onix/pg-source.ts, #3); tests and the demo use fakes.
+ * Where delivery notes come from. Production reads ONIX (src/onix/onix-source.ts, #3); tests and the demo use fakes.
  * Implementations only read; SkladPulz never writes to ONIX.
  */
 export interface DeliveryNoteSource {

@@ -5,6 +5,7 @@ import { page } from '../layout.ts';
 import { handleScan, stationView, UnknownStationError } from '../../station/scan-service.ts';
 import { getStation, listStations } from '../../store/stations.ts';
 import { ACTIVITY_LABEL } from '../../domain/station.ts';
+import { describeSync } from '../../onix/sync.ts';
 import { formatDuration, localTime } from '../../time.ts';
 
 const MAX_SCAN_LENGTH = 100;
@@ -21,6 +22,7 @@ export function stationRoutes(deps: AppDeps): Hono<AppEnv> {
     const tz = deps.config.timezone;
     const stations = listStations(deps.db).map((s) => stationView(deps.db, s.id, now));
     const body = html`
+      <p class="muted onix-status">${describeSync(deps.db, deps.source !== null, tz)}</p>
       <p class="lead">Otvorte stanicu na počítači alebo termináli pri skeneri. Stránka stanice beží na celú obrazovku a reaguje len na pípnutia.</p>
       ${stations.length === 0 ? html`<p class="empty">Zatiaľ nie je založená žiadna stanica. Založte ju v <a href="/nastavenia/stanice">nastaveniach</a>.</p>` : ''}
       <div class="cards">
