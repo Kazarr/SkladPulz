@@ -33,6 +33,8 @@ const config = buildConfig({
   managers: [{ name: 'veduci', passwordHash: hashPassword('demo') }],
   sessionSecret: 'demo-session-secret-not-for-production-use',
   baseUrl: `http://localhost:${port}`,
+  // The video's live scans last seconds, not minutes; the default 20 s would flag every one as suspect.
+  limits: { shortSeconds: 5, longSeconds: 2 * 60 * 60 },
   email: { enabled: false, recipients: ['veduci.skladu@firma.sk'] },
   onix: { connectionString: 'pglite://demo' },
 });

@@ -4,11 +4,11 @@
  *   node --disable-warning=ExperimentalWarning demo/server.ts 3300 &   (wait until it prints the URL)
  *   node demo/record-video.ts http://localhost:3300
  *
- * Writes demo/out/skladpulz-demo.webm; demo/make-video.sh turns it into an MP4.
+ * Writes demo/out/skladpulz-demo.webm and beeps.json; demo/make-video.ts turns them into an MP4 with the station sounds.
  */
 import { chromium, type Locator, type Page } from '@playwright/test';
 import ExcelJS from 'exceljs';
-import { mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
+import { mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const BASE = process.argv[2] ?? 'http://localhost:3300';
@@ -21,7 +21,8 @@ mkdirSync(OUT, { recursive: true });
 const videoDir = join(OUT, 'raw');
 rmSync(videoDir, { recursive: true, force: true });
 
-const browser = await chromium.launch({ args: ['--lang=sk-SK', '--autoplay-policy=no-user-gesture-required'] });
+// LANG makes date inputs show Slovak dates (28. 10. 2026); --lang alone does not in headless Chromium.
+const browser = await chromium.launch({ args: ['--lang=sk-SK'], env: { ...process.env, LANG: 'sk_SK.UTF-8', LANGUAGE: 'sk' } });
 const context = await browser.newContext({
   viewport: SIZE,
   locale: 'sk-SK',
@@ -74,6 +75,9 @@ await context.addInitScript(() => {
 });
 
 const page = await context.newPage();
+/** Video time of every station beep, so make-video.ts can add the sounds the recording cannot capture. */
+const t0 = Date.now();
+const beeps: { at: number; outcome: string }[] = [];
 const wait = (ms: number): Promise<void> => page.waitForTimeout(ms);
 
 async function caption(title: string, detail = ''): Promise<void> {
@@ -134,7 +138,11 @@ async function scan(code: string, what: string, after = 2200): Promise<void> {
   await wait(500);
   await page.keyboard.type(code, { delay: 18 });
   await page.keyboard.press('Enter');
+  const pressed = Date.now() - t0;
   await wait(after);
+  const cls = (await page.locator('#status').getAttribute('class')) ?? '';
+  const outcome = ['chyba', 'upozornenie', 'ok'].find((o) => cls.split(' ').includes(o)) ?? 'ok';
+  beeps.push({ at: pressed + 80, outcome });
   await page.evaluate(() => document.getElementById('__scan')?.classList.remove('show'));
 }
 
@@ -311,10 +319,10 @@ await hideCaption();
 
 // 7. Outro -------------------------------------------------------------------
 await card(SKLAD, [
-  'Etapa 1 a 2 sú naprogramované: stanice, ONIX, karty, denný prehľad, Excel,',
-  'porovnanie, výkonový index, opravy vedúcim a denný e-mail.',
-  'Ďalší krok: overenie na ONIX databáze zákazníka, čiarový kód v tlači DL (KROS)',
-  'a test so skenermi priamo v sklade.',
+  'Etapa 1 aj 2 sú naprogramované',
+  'stanice · napojenie na ONIX · karty a kódy · denný prehľad · Excel',
+  'porovnanie · výkonový index · opravy vedúcim · denný e-mail',
+  'Ďalej: overenie na ONIX databáze zákazníka, čiarový kód v tlači DL (KROS), test so skenermi v sklade',
 ], 9000);
 
 await context.close();
@@ -322,5 +330,6 @@ await browser.close();
 const recorded = readdirSync(videoDir).find((f) => f.endsWith('.webm'));
 if (!recorded) throw new Error('no video recorded');
 renameSync(join(videoDir, recorded), join(OUT, 'skladpulz-demo.webm'));
+writeFileSync(join(OUT, 'beeps.json'), JSON.stringify(beeps));
 rmSync(videoDir, { recursive: true, force: true });
 console.log(`Video: ${join(OUT, 'skladpulz-demo.webm')}`);
