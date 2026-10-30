@@ -40,8 +40,8 @@ test('a tie is never split: a tie group touching two bands goes to the middle', 
   assert.deepEqual(b.slice(0, 5), ['top', 'top', 'middle', 'middle', 'middle']);
   assert.deepEqual(b.slice(7), ['bottom', 'bottom', 'bottom']);
   // tie on the bottom border
-  const c = bands([100, 90, 80, 70, 60, 50, 40, 30, 30, 10]);
-  assert.deepEqual(c.slice(6), ['middle', 'middle', 'middle', 'bottom']);
+  const c = bands([100, 90, 80, 70, 60, 50, 40, 40, 30, 10]);
+  assert.deepEqual(c.slice(6), ['middle', 'middle', 'bottom', 'bottom']);
 });
 
 test('everyone tied: everyone is middle', () => {

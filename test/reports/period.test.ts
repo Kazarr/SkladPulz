@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { periodAround, customPeriod, shiftPeriod } from '../../src/reports/period.ts';
+import { periodAround, customPeriod as maybeCustom, shiftPeriod, type Period } from '../../src/reports/period.ts';
+
+function customPeriod(from: string, to: string): Period {
+  const p = maybeCustom(from, to);
+  assert.ok(p);
+  return p;
+}
 
 test('a day is itself', () => {
   assert.deepEqual(periodAround('den', '2026-10-14'), { kind: 'den', from: '2026-10-14', to: '2026-10-14' });
@@ -42,5 +48,5 @@ test('a custom range shifts by its own length, so the previous period has equal 
 });
 
 test('a custom range with the end before the start is refused', () => {
-  assert.equal(customPeriod('2026-10-16', '2026-10-10'), null);
+  assert.equal(maybeCustom('2026-10-16', '2026-10-10'), null);
 });

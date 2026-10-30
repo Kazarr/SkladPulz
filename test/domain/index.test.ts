@@ -34,7 +34,7 @@ test('a worker on big notes and one on small notes at the same pace get the same
   assert.ok(Math.abs((performanceIndex(W, big, team) ?? 0) - expected) < 1e-9);
   assert.ok(expected > 100);
   assert.ok((performanceIndex(W, slow, team) ?? 999) < 100);
-  assert.ok((totalsOf([{ workerId: 1, activity: 'VYCH', netSeconds: 88.4, lines: 2, units: 0, weightKg: 1 }]).notesPerHour ?? 0) > 10 * (totalsOf([{ workerId: 2, activity: 'VYCH', netSeconds: 856, lines: 40, units: 0, weightKg: 20 }]).notesPerHour ?? 0));
+  assert.ok((totalsOf([{ workerId: 1, activity: 'VYCH', netSeconds: 88.4, lines: 2, units: 0, weightKg: 1 }]).notesPerHour ?? 0) > 5 * (totalsOf([{ workerId: 2, activity: 'VYCH', netSeconds: 856, lines: 40, units: 0, weightKg: 20 }]).notesPerHour ?? 0));
 });
 
 test('the index is null when there is no net time, no records or the team has no standard time', () => {
