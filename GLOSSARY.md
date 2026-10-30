@@ -1,0 +1,60 @@
+# SkladPulz
+
+Times how long each warehouse worker takes to pick or pack a delivery note, and compares workers by volume and speed. Slovak terms are the customer's words and the database's names; the English term is the code's name.
+
+## Language
+
+**Delivery note** (`dodaci_list`, DL):
+A KROS ONIX document of base type 2050 that the worker picks or packs, identified by its full number (`ns_number`). SkladPulz keeps a read-only cache of it.
+_Avoid_: order, document, invoice
+
+**Worker** (`zamestnanec`):
+A person who picks or packs, identified by a card code `Z` + four digits (`Z0012`). Not an ONIX user.
+_Avoid_: user, employee account, operator
+
+**Station** (`stanica`):
+A browser page bound to one scanner place (a picking point or a packing table), with an optional default activity. Workers may take turns at one station.
+_Avoid_: terminal, device, client
+
+**Activity** (`cinnost`):
+What a record measures: `VYCH` (picking, vychystanie) or `BAL` (packing, balenie).
+_Avoid_: task, operation, job
+
+**Record** (`zaznam`):
+One worker doing one activity on one delivery note, from start to end. A delivery note has at most one counted record per activity.
+_Avoid_: measurement, entry, session
+
+**Net time** (`cisty_cas_s`):
+A record's end minus start minus its pauses, in seconds. The basis of every speed.
+_Avoid_: duration, elapsed time
+
+**Snapshot** (`pocet_poloziek`, `pocet_mj`, `hmotnost_kg` on the record):
+The delivery note's line count, unit count and weight copied onto the record when it ends; later changes to the note do not change it.
+
+**Control code** (`riadiaci kód`):
+A printed barcode that drives the station: `C-VYCH`, `C-BAL`, `C-KONIEC`, `C-PAUZA`, `C-POKRAC`, `C-ODHLAS`.
+_Avoid_: command, action code
+
+**Scan** (`pípnutie`):
+One code read by the scanner and sent to a station, logged in `scan_log` with its outcome.
+
+**Record status** (`stav`):
+`ok` (ended by a scan), `neukoncene` (closed automatically at shift end), `opravene` (corrected by a manager), `vylucene` (excluded by a manager).
+
+**Suspect record** (`podozrenie`):
+A record whose net time is under the short limit (`kratky`, default 20 s) or over the long limit (`dlhy`). It counts only after a manager confirms it.
+
+**Counted record** (`zaznam_hodnotene` view):
+A record that enters averages and speeds: status `ok` or `opravene`, and not suspect unless confirmed.
+_Avoid_: valid record
+
+**Shift** (`zmena`):
+A configured daily time window (`06:00–14:00`). A record still running at the end of the shift it started in is closed as `neukoncene`.
+
+**Performance index** (`vykonovy index`):
+Standard time of a record divided by its net time, scaled so the team average is 100 %. Standard time = fixed time per note + time per line + time per kg, set per activity.
+_Avoid_: score, rating
+
+**Manager** (`vedúci`):
+The person who reviews and corrects records and reads reports; signs in with a name and password from the configuration.
+_Avoid_: admin, supervisor

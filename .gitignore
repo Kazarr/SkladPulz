@@ -1,0 +1,9 @@
+node_modules/
+data/
+public/js/
+config.json
+test-results/
+playwright-report/
+demo/out/
+*.db
+*.db-*
