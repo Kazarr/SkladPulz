@@ -207,7 +207,8 @@ export function history(today: string, days: number, nowMinutes: number, its: De
       }
     }
   }
-  const openNotes = Array.from({ length: 12 }, () => makeNote(r, seq++, today, 'Na vychystanie'));
+  // Fixed numbers (DL…90001–90012) whatever the time of day, so the video script can scan them.
+  const openNotes = Array.from({ length: 12 }, (_, i) => makeNote(r, 90001 + i, today, 'Na vychystanie'));
   notes.push(...openNotes);
   return { notes, records, openNotes };
 }
