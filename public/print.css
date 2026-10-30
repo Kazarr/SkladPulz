@@ -1,0 +1,25 @@
+/* Print pages: worker cards (credit-card size, 2 x 5 per A4) and the control-code table. */
+@page { size: A4; margin: 10mm 15mm; }
+
+.toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+
+.cards-sheet { display: grid; grid-template-columns: repeat(2, 85.6mm); grid-auto-rows: 54mm; justify-content: center; background: #fff; }
+.card-print { width: 85.6mm; height: 54mm; border: 0.25mm solid #888; padding: 4mm; display: flex; flex-direction: column; align-items: center; justify-content: space-between; break-inside: avoid; overflow: hidden; background: #fff; color: #000; }
+.card-print .name { font-size: 5mm; font-weight: 700; text-align: center; line-height: 1.15; max-height: 12mm; overflow: hidden; }
+.card-print svg { display: block; }
+
+.codes-sheet { background: #fff; color: #000; }
+.codes-sheet .howto { font-size: 4.2mm; margin: 0 0 6mm; padding-left: 6mm; }
+.codes-sheet table { border: 0.25mm solid #888; border-radius: 0; }
+.codes-sheet tr { break-inside: avoid; }
+.codes-sheet td { vertical-align: middle; padding: 3mm 5mm; border-bottom: 0.25mm solid #888; }
+.codes-sheet .label { font-size: 7mm; font-weight: 700; width: 70mm; }
+.codes-sheet .hint { font-size: 3.6mm; font-weight: 400; color: #444; display: block; }
+.codes-sheet svg { display: block; margin: 0 auto; }
+
+@media print {
+  h1, .topbar, .no-print { display: none !important; }
+  body { background: #fff; }
+  main { padding: 0; max-width: none; }
+  table { border-radius: 0; }
+}

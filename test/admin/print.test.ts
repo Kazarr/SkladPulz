@@ -20,9 +20,9 @@ test('the card page prints every active worker and leaves out inactive ones', as
   const res = await app.request('/zamestnanci/karty');
   assert.equal(res.status, 200);
   const html = await res.text();
-  for (const [name, code] of [['Ján Novák', 'Z0001'], ['Eva Malá', 'Z0002']]) {
+  for (const [name, code] of [['Ján Novák', 'Z0001'], ['Eva Malá', 'Z0002']] as const) {
     assert.ok(html.includes(name), name);
-    assert.ok(html.includes(labelOf(code!)), code);
+    assert.ok(html.includes(labelOf(code)), code);
   }
   assert.ok(!html.includes('Peter Starý'));
   assert.ok(!html.includes(labelOf('Z0003')));
