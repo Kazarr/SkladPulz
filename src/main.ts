@@ -5,6 +5,8 @@ import { createApp } from './web/app.ts';
 import { closeExpiredRecords } from './station/auto-close.ts';
 import { createOnixSource, pgQuery } from './onix/onix-source.ts';
 import { syncActiveNotes } from './onix/sync.ts';
+import { sendDueSummaries } from './email/scheduler.ts';
+import { createSmtpTransport } from './email/transport.ts';
 
 const config = loadConfig();
 const db = openDb(config.dbPath);
@@ -43,6 +45,22 @@ if (source) {
   every(config.onix.syncIntervalMin * 60_000, 'ONIX synchronization', async () => {
     const result = await syncActiveNotes(db, source, now());
     if (!result.ok) logError('ONIX synchronization failed; stations keep working from the cache', result.error);
+  });
+}
+
+if (config.email.enabled) {
+  const mail = createSmtpTransport(config.email.smtp);
+  let sending = false; // a slow SMTP server must not overlap the next run
+  every(5 * 60_000, 'daily summary e-mail', async () => {
+    if (sending) return;
+    sending = true;
+    try {
+      for (const r of await sendDueSummaries(db, config, now(), mail)) {
+        if (!r.ok) logError(`daily summary e-mail for ${r.date} failed`, r.error);
+      }
+    } finally {
+      sending = false;
+    }
   });
 }
 
