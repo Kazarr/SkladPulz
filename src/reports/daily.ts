@@ -2,6 +2,7 @@ import { ACTIVITIES, type Activity } from '../config.ts';
 import type { Db } from '../db/db.ts';
 import type { EndMethod, RecordStatus } from '../store/records.ts';
 import { listCountedDayRecords, listDayRecords, type ReportRecord } from './queries.ts';
+import { reviewReasons } from '../domain/record.ts';
 import { performanceIndex, type WeightsByActivity } from '../domain/index.ts';
 import { totalsByWorkerAndActivity, totalsOf, type Totals } from './metrics.ts';
 
@@ -10,7 +11,7 @@ export type StatusFilter = RecordStatus | 'kontrola';
 export interface ReportFilter {
   workerId: number | null;
   activity: Activity | null;
-  /** `kontrola` = records waiting for a manager: unfinished or suspect and not confirmed. */
+  /** `kontrola` = records waiting for a manager (`reviewReasons`). */
   status: StatusFilter | null;
 }
 
@@ -62,7 +63,7 @@ export function isSuspectUnconfirmed(r: ReportRecord): boolean {
 }
 
 export function needsReview(r: ReportRecord): boolean {
-  return r.status === 'neukoncene' || isSuspectUnconfirmed(r);
+  return reviewReasons(r).length > 0;
 }
 
 export interface RecordTag {

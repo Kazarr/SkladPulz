@@ -1,11 +1,8 @@
 import { ACTIVITIES, type Activity } from '../config.ts';
 import { transaction, type Db } from '../db/db.ts';
-import { netSeconds, pausedSeconds } from '../domain/record.ts';
+import { netSeconds, pausedSeconds, reviewReasons, type ReviewReason } from '../domain/record.ts';
 import { getWorker } from './workers.ts';
 import { listPauses, toRecord, type RecordRow, type WorkRecord } from './records.ts';
-
-/** Why a record is on the review list. */
-export type ReviewReason = 'neukoncene' | 'kratky' | 'dlhy' | 'duplicita';
 
 export interface ReviewItem {
   record: WorkRecord;
@@ -14,24 +11,20 @@ export interface ReviewItem {
 }
 
 /**
- * Records a manager has to look at, among those that started in [from, to): unfinished ones, suspect ones not yet confirmed,
- * and duplicates not yet confirmed. Counted, confirmed, excluded and running records are left out.
+ * Records a manager has to look at, among those that started in [from, to): the ones for which `reviewReasons` (the one definition,
+ * shared with the report filter and the e-mail) finds a reason. Counted, confirmed, excluded and running records are left out.
  */
 export function listReviewItems(db: Db, range: { from: number; to: number }): ReviewItem[] {
   const rows = db
     .prepare(
       `SELECT r.*, z.meno AS meno FROM zaznam r JOIN zamestnanec z ON z.id = r.zamestnanec_id
-       WHERE r.zaciatok >= ? AND r.zaciatok < ?
-         AND (r.stav = 'neukoncene' OR (r.stav IN ('ok', 'opravene') AND r.potvrdene = 0 AND (r.podozrenie IS NOT NULL OR r.duplicita = 1)))
-       ORDER BY r.zaciatok, r.id`,
+       WHERE r.zaciatok >= ? AND r.zaciatok < ? ORDER BY r.zaciatok, r.id`,
     )
     .all(range.from, range.to) as unknown as (RecordRow & { meno: string })[];
-  return rows.map((r) => {
-    const reasons: ReviewReason[] = [];
-    if (r.stav === 'neukoncene') reasons.push('neukoncene');
-    if (r.podozrenie !== null && r.potvrdene === 0) reasons.push(r.podozrenie);
-    if (r.duplicita === 1 && r.potvrdene === 0) reasons.push('duplicita');
-    return { record: toRecord(r), workerName: r.meno, reasons };
+  return rows.flatMap((r) => {
+    const record = toRecord(r);
+    const reasons = reviewReasons(record);
+    return reasons.length === 0 ? [] : [{ record, workerName: r.meno, reasons }];
   });
 }
 
