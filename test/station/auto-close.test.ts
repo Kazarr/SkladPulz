@@ -55,3 +55,17 @@ test('a worker signed in without a running record is signed out after the shift'
   closeExpiredRecords(env.db, env.config, at('14:31'));
   assert.equal(getSignIn(env.db, w), null);
 });
+
+test('scanning the card again at the same station refreshes the sign-in, so an afternoon worker is not signed out at 14:30', async () => {
+  const env = testEnv({}, at('13:45'));
+  const st = createStation(env.db, 'Baliaci stôl', 'BAL').id;
+  const w = createWorker(env.db, 'Ján', 'Z0001').id;
+  await handleScan(env, st, 'Z0001');
+  env.clock.set(at('14:10'));
+  await handleScan(env, st, 'Z0001');
+  assert.equal(getSignIn(env.db, w)?.since, at('14:10'));
+  closeExpiredRecords(env.db, env.config, at('14:30'));
+  assert.notEqual(getSignIn(env.db, w), null);
+  closeExpiredRecords(env.db, env.config, at('22:30'));
+  assert.equal(getSignIn(env.db, w), null);
+});
