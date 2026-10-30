@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { listSendLog, sendDueSummaries } from '../../src/email/scheduler.ts';
+import { addDays } from '../../src/time.ts';
 import { at, testEnv, type TestEnv } from '../helpers.ts';
 import { addRecord, addWorker } from '../reports/seed.ts';
-import { FakeTransport } from './fake-transport.ts';
+import { FakeTransport, markSent } from './fake-transport.ts';
 
 const D = '2026-10-14';
 const ON = { email: { enabled: true, recipients: ['vedenie@firma.sk'], attachExcel: false, delayMin: 15 } };
@@ -11,6 +12,7 @@ const ON = { email: { enabled: true, recipients: ['vedenie@firma.sk'], attachExc
 function withDay(over: Parameters<typeof testEnv>[0] = ON, date = D, hhmm = '08:00'): TestEnv {
   const env = testEnv(over);
   addRecord(env.db, { worker: addWorker(env.db, 'Anna', 'Z0001'), start: at(hhmm, date) });
+  markSent(env.db, addDays(date, -1));
   return env;
 }
 
@@ -29,7 +31,7 @@ test('a day is sent once only across repeated runs, and the send is logged', asy
   const t = new FakeTransport();
   for (const hhmm of ['22:15', '22:20', '23:00']) await sendDueSummaries(env.db, env.config, at(hhmm), t);
   assert.equal(t.sent.length, 1);
-  const log = listSendLog(env.db, 10);
+  const log = listSendLog(env.db, 10).filter((l) => l.date === D);
   assert.equal(log.length, 1);
   assert.deepEqual([log[0]?.date, log[0]?.ok, log[0]?.recipients, log[0]?.test], [D, true, ['vedenie@firma.sk'], false]);
 });
@@ -48,7 +50,7 @@ test('a failure is recorded and retried on the next run; success stops the retri
   await sendDueSummaries(env.db, env.config, at('22:25'), t);
   assert.equal(t.sent.length, 1);
   assert.equal(t.attempts, 2);
-  assert.deepEqual(listSendLog(env.db, 10).map((l) => l.ok), [true, false]);
+  assert.deepEqual(listSendLog(env.db, 10).filter((l) => l.date === D).map((l) => l.ok), [true, false]);
 });
 
 test('retries stop after 5 failures that day and the error stays in the log', async () => {
@@ -79,7 +81,7 @@ test('disabled config or no recipients sends nothing', async () => {
     const t = new FakeTransport();
     await sendDueSummaries(env.db, env.config, at('23:00'), t);
     assert.equal(t.attempts, 0);
-    assert.equal(listSendLog(env.db, 10).length, 0);
+    assert.equal(listSendLog(env.db, 10).filter((l) => l.date === D).length, 0);
   }
 });
 

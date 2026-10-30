@@ -36,6 +36,18 @@ Postup pre technika (#8). SkladPulz je jedna aplikácia (Node.js) s vlastnou dat
 
 Pri chybe v konfigurácii aplikácia nenaštartuje a vypíše, čo je zle.
 
+### Denný súhrn e-mailom (`email`)
+
+| Kľúč | Čo nastaviť |
+|---|---|
+| `email.enabled` | `true` zapne odosielanie (kontrola každých 5 minút) |
+| `email.recipients` | zoznam adries, napr. `["veduci@firma.sk"]` |
+| `email.attachExcel` | `true` pridá k e-mailu Excel dňa |
+| `email.delayMin` | koľko minút po konci poslednej zmeny sa súhrn pošle (predvolene 15) |
+| `email.smtp` | `host`, `port`, `secure` (`true` pre port 465), `user`, `password`, `from` (napr. `"SkladPulz <skladpulz@firma.sk>"`) |
+
+Súhrn sa pošle raz za deň; zmena končiaca po polnoci patrí do dňa, v ktorom začala. Po výpadku servera sa dosiahne najviac včerajšok a dnešok. Neúspešné odoslanie sa opakuje, najviac 5-krát za deň. Skúška SMTP: `http://SERVER:3000/email/nahlad` ukáže náhľad e-mailu, príjemcov a posledné odoslania; tlačidlo „Poslať skúšobný e-mail“ pošle súhrn zvoleného dňa hneď a deň sa tým nepovažuje za odoslaný. Zmeny v `config.json` sa prejavia po reštarte služby.
+
 ## 4. ONIX
 
 1. V ONIX DB spustite `docs/onix-view.sql`: založí view `skl_aktivne_dl` a používateľa len na čítanie. Heslo zmeňte.

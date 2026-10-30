@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createApp } from '../../src/web/app.ts';
 import { at, testEnv } from '../helpers.ts';
 import { addRecord, addWorker } from '../reports/seed.ts';
-import { FakeTransport } from './fake-transport.ts';
+import { FakeTransport, markSent } from './fake-transport.ts';
 
 const ON = { email: { enabled: true, recipients: ['vedenie@firma.sk'], attachExcel: false } };
 
@@ -24,6 +24,7 @@ test('the test send mails the chosen day at once without marking it as sent', as
   const env = testEnv(ON);
   addRecord(env.db, { worker: addWorker(env.db, 'Anna', 'Z0001'), start: at('08:00') });
   const t = new FakeTransport();
+  markSent(env.db, '2026-10-13');
   const app = createApp({ ...env, mail: t });
   const res = await app.request('/email/nahlad/odoslat', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'datum=2026-10-14' });
   assert.equal(res.status, 303);

@@ -94,4 +94,17 @@ export const MIGRATIONS: readonly string[] = [
     SELECT * FROM zaznam
     WHERE stav IN ('ok', 'opravene') AND (podozrenie IS NULL OR potvrdene = 1);
   `,
+  `
+  -- Every send of the daily summary e-mail (#12). A day is done once a row with ok = 1 and skusobny = 0 exists.
+  CREATE TABLE email_odoslanie (
+    id          INTEGER PRIMARY KEY,
+    den         TEXT NOT NULL,
+    cas         INTEGER NOT NULL,
+    prijemcovia TEXT NOT NULL,
+    ok          INTEGER NOT NULL CHECK (ok IN (0, 1)),
+    chyba       TEXT,
+    skusobny    INTEGER NOT NULL DEFAULT 0 CHECK (skusobny IN (0, 1))
+  );
+  CREATE INDEX email_odoslanie_den ON email_odoslanie(den);
+  `,
 ];

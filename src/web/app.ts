@@ -2,8 +2,10 @@ import { Hono } from 'hono';
 import { serveStatic } from '@hono/node-server/serve-static';
 import type { Config } from '../config.ts';
 import type { Db } from '../db/db.ts';
+import type { MailTransport } from '../email/transport.ts';
 import type { DeliveryNoteSource } from '../onix/source.ts';
 import { adminRoutes } from './routes/admin.ts';
+import { emailRoutes } from './routes/email.ts';
 import { reportRoutes } from './routes/report.ts';
 import { stationRoutes } from './routes/station.ts';
 
@@ -12,6 +14,8 @@ export interface AppDeps {
   config: Config;
   source: DeliveryNoteSource | null;
   now: () => number;
+  /** Mail transport for the test e-mail; SMTP from the configuration when absent. */
+  mail?: MailTransport;
   logError: (message: string, error: unknown) => void;
 }
 
@@ -36,6 +40,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   app.route('/', stationRoutes(deps));
   app.route('/', adminRoutes(deps));
   app.route('/', reportRoutes(deps));
+  app.route('/', emailRoutes(deps));
   app.onError((err, c) => {
     deps.logError(`${c.req.method} ${c.req.path}`, err);
     return c.text('Nastala chyba. Skúste to znova; ak pretrváva, kontaktujte správcu.', 500);
