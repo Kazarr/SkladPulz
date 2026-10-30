@@ -18,3 +18,5 @@ Rozhodnutia, ktoré patria zákazníkovi (pravidlá prevádzky, jeho dáta). Ký
 
 - Skener posiela kód ako klávesnica a ukončí ho Enterom. Ak je na PC slovenské rozloženie klávesnice a skener píše „Yéé+ľ“ namiesto „Z0012“, SkladPulz to opraví sám; správne je však nastaviť skener na rozloženie zhodné s PC (návod skenera, „Keyboard country“).
 - Čísla DL sa porovnávajú presne tak, ako ich vráti ONIX v `ns_number` (bez zmeny veľkosti písmen).
+- Synchronizácia s ONIXom beží každých `onix.syncIntervalMin` minút. Prázdny zoznam aktívnych DL sa berie ako chyba ONIXu alebo zlého filtra: nič sa nezmení a hlásenie je na úvodnej stránke. Výpadok ONIXu stanice nezastaví, pracujú s uloženými údajmi.
+- `npm run onix:check` vypíše počet aktívnych DL a koľko z nich nemá hmotnosť (podiel kariet bez hmotnosti je otvorená otázka v #1).

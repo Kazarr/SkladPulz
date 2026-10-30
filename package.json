@@ -13,7 +13,8 @@
     "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.ts\"",
     "verify": "npm run typecheck && npm test",
     "e2e": "npm run build && playwright test",
-    "smoke": "node src/tools/smoke.ts"
+    "smoke": "node src/tools/smoke.ts",
+    "onix:check": "node src/tools/onix-check.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",
