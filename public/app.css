@@ -83,3 +83,6 @@ tfoot td { font-weight: 700; background: #eef1f5; }
   body { background: #fff; }
   main { padding: 0; max-width: none; }
 }
+
+table.narrow { width: auto; min-width: 360px; }
+.explain li { margin-bottom: 8px; max-width: 80ch; }

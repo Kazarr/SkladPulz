@@ -19,6 +19,7 @@ const SUMMARY_COLUMNS: Column<SummaryLine>[] = [
   { header: 'DL / hod', kind: 'decimal', value: (l) => l.row.notesPerHour },
   { header: 'Položky / hod', kind: 'decimal', value: (l) => l.row.linesPerHour },
   { header: 'kg / hod', kind: 'decimal', value: (l) => l.row.kgPerHour },
+  { header: 'Výkonový index (%)', kind: 'decimal', value: (l) => l.row.index },
   { header: 'Priemerný čas na DL (h:mm:ss)', kind: 'duration', value: (l) => l.row.avgSecondsPerNote },
   { header: 'Priemerný čas na položku (h:mm:ss)', kind: 'duration', value: (l) => l.row.avgSecondsPerLine },
   { header: 'Neukončené (mimo výpočtu)', kind: 'integer', value: (l) => l.row.unfinished },

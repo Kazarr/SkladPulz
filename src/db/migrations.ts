@@ -94,4 +94,15 @@ export const MIGRATIONS: readonly string[] = [
     SELECT * FROM zaznam
     WHERE stav IN ('ok', 'opravene') AND (podozrenie IS NULL OR potvrdene = 1);
   `,
+  // Weights of the performance index (#10), one row per activity once a manager saved them; no row = the defaults in src/domain/index.ts.
+  `
+  CREATE TABLE vahy_indexu (
+    cinnost          TEXT PRIMARY KEY CHECK (cinnost IN ('VYCH', 'BAL')),
+    pevny_cas_s      REAL NOT NULL CHECK (pevny_cas_s >= 0),
+    cas_na_polozku_s REAL NOT NULL CHECK (cas_na_polozku_s >= 0),
+    cas_na_kg_s      REAL NOT NULL CHECK (cas_na_kg_s >= 0),
+    zmenil           TEXT,
+    zmenene          INTEGER NOT NULL
+  );
+  `,
 ];
