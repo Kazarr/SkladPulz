@@ -125,8 +125,8 @@ test('the day page shows the summary in Slovak number format, highlights rows an
   const body = await res.text();
   assert.match(body, /Vychystanie/);
   assert.match(body, /Anna/);
-  assert.match(body, /7,5/);
-  assert.match(body, /20,0/); // 10 lines in half an hour
+  assert.match(body, /<td class="num">10,0<\/td>/); // 7.5 + 2.5 kg of the two counted records
+  assert.match(body, /<td class="num">22,5<\/td>/); // 15 lines in 2400 s
   assert.match(body, /href="\/dl\/DL%2F1"/);
   assert.match(body, /class="err"/);
   assert.match(body, /class="warn"/);
@@ -224,7 +224,10 @@ test('the Excel export holds a summary sheet and a records sheet with real dates
   assert.equal(annaRow.getCell(col('Položky')).value, 10);
   assert.equal(annaRow.getCell(col('Hmotnosť (kg)')).value, 7.5);
   assert.equal(annaRow.getCell(col('Položky / hod')).value, 20);
-  assert.equal(Math.round(Number(annaRow.getCell(col('Čistý čas')).value) * 86400), 1800);
+  // exceljs reads a [h]:mm:ss cell back as a Date counted from the Excel epoch
+  const duration = annaRow.getCell(col('Čistý čas')).value;
+  assert.ok(duration instanceof Date);
+  assert.equal(Math.round((duration.getTime() - Date.UTC(1899, 11, 30)) / 1000), 1800);
   const teamRows = sum.getRows(2, sum.rowCount - 1)?.filter((r) => String(r.getCell(col('Zamestnanec')).value).startsWith('Tím'));
   assert.equal(teamRows?.length, 2);
   assert.equal(sum.views[0]?.state, 'frozen');
