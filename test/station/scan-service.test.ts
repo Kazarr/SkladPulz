@@ -232,6 +232,22 @@ test('re-scanning the note that is running still only says it runs; a note of an
   assert.deepEqual(records(env).map((r) => r['duplicita']), [0, 0, 0]);
 });
 
+test('a record that ended while ONIX was down gets its snapshot when a later lookup fetches the note', async () => {
+  const env = setup();
+  env.source.add(note('DL900', { lines: 40, units: 90, weightKg: 123 }));
+  env.source.down = true;
+  await handleScan(env, env.pack, 'Z0001');
+  assert.equal((await handleScan(env, env.pack, 'DL900')).outcome, 'upozornenie');
+  env.clock.advance(60);
+  await handleScan(env, env.pack, 'C-KONIEC');
+  assert.equal(getRecord(env.db, 1)?.lines, null);
+  env.source.down = false;
+  await handleScan(env, env.pack, 'Z0002');
+  await handleScan(env, env.pack, 'DL900');
+  const r = getRecord(env.db, 1);
+  assert.deepEqual([r?.lines, r?.units, r?.weightKg], [40, 90, 123]);
+});
+
 test('an unknown note is fetched from ONIX on demand; one ONIX does not know is refused in red', async () => {
   const env = setup();
   env.source.add(note('DL900', { customer: 'Nový odberateľ', lines: 40 }));

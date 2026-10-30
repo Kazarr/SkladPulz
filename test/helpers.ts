@@ -20,6 +20,10 @@ export function note(number: string, over: Partial<DeliveryNote> = {}): Delivery
 
 export class FakeSource implements DeliveryNoteSource {
   notes = new Map<string, DeliveryNote>();
+  /** Notes that fetchByNumber knows but fetchActive does not list (finished, old). */
+  inactive = new Map<string, DeliveryNote>();
+  /** Numbers whose lookup throws, as for a malformed ONIX row. */
+  failFor = new Set<string>();
   down = false;
   calls: string[] = [];
   add(...ns: DeliveryNote[]): this {
@@ -34,7 +38,8 @@ export class FakeSource implements DeliveryNoteSource {
   async fetchByNumber(number: string): Promise<DeliveryNote | null> {
     this.calls.push(number);
     if (this.down) throw new Error('ONIX down');
-    return this.notes.get(number) ?? null;
+    if (this.failFor.has(number)) throw new Error(`ONIX row for delivery note ${number} is unusable`);
+    return this.notes.get(number) ?? this.inactive.get(number) ?? null;
   }
 }
 

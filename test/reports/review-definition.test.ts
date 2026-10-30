@@ -11,7 +11,7 @@ import { addRecord, addWorker, type SeedRecord } from './seed.ts';
 
 const D = '2026-10-14';
 
-/** One record of every kind that the review definition has to sort: 4 need review, the rest do not. */
+/** One record of every kind that the review definition has to sort: 5 need review, the rest do not. */
 function seedAll(env: ReturnType<typeof testEnv>) {
   const w = addWorker(env.db, 'Anna', 'Z0001');
   const r = (hhmm: string, dl: string, over: Partial<SeedRecord>) => addRecord(env.db, { worker: w, start: at(hhmm), dl, ...over });
@@ -20,6 +20,7 @@ function seedAll(env: ReturnType<typeof testEnv>) {
     short: r('06:30', 'N2', { net: 5, podozrenie: 'kratky' }),
     long: r('07:00', 'N3', { net: 9000, podozrenie: 'dlhy' }),
     duplicate: r('09:00', 'N4', { duplicita: true }),
+    noSnapshot: r('09:30', 'N5', { lines: null }),
   };
   const fine = [
     r('10:00', 'F1', {}),
@@ -29,6 +30,7 @@ function seedAll(env: ReturnType<typeof testEnv>) {
     r('12:00', 'F5', { duplicita: true, stav: 'vylucene' }),
     r('12:30', 'F6', { stav: 'bezi' }),
     r('13:00', 'F7', { stav: 'opravene', potvrdene: true }),
+    r('13:30', 'F8', { lines: null, potvrdene: true }),
   ];
   return { needs: Object.values(needs), fine };
 }
