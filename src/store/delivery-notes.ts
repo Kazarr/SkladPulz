@@ -1,4 +1,5 @@
 import type { Db } from '../db/db.ts';
+import { backfillSnapshots } from './records.ts';
 
 /** A delivery note as SkladPulz caches it from ONIX. */
 export interface DeliveryNote {
@@ -46,7 +47,7 @@ export function getNote(db: Db, number: string): DeliveryNote | null {
   return r ? toNote(r) : null;
 }
 
-/** Inserts or refreshes one note in the cache. */
+/** Inserts or refreshes one note in the cache, and gives the snapshot to ended records of it that still lack one. */
 export function upsertNote(db: Db, n: DeliveryNote, syncedAt: number, active = true): void {
   db.prepare(
     `INSERT INTO dodaci_list (cislo, onix_id_master, datum, odberatel, stav, druh, pocet_poloziek, pocet_mj, hmotnost_kg, aktivny, synchronizovane)
@@ -57,6 +58,7 @@ export function upsertNote(db: Db, n: DeliveryNote, syncedAt: number, active = t
        pocet_mj = excluded.pocet_mj, hmotnost_kg = excluded.hmotnost_kg, aktivny = excluded.aktivny,
        synchronizovane = excluded.synchronizovane`,
   ).run(n.number, n.onixIdMaster, n.date, n.customer, n.state, n.type, n.lines, n.units, n.weightKg, active ? 1 : 0, syncedAt);
+  backfillSnapshots(db, n.number);
 }
 
 export function countActiveNotes(db: Db): number {

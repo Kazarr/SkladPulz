@@ -169,3 +169,14 @@ export function backfillSnapshots(db: Db, dlNumber: string): number {
     .run(dlNumber);
   return Number(res.changes);
 }
+
+/** Numbers of the notes of ended, non-excluded records that still have no snapshot, those of the newest records first. */
+export function notesWithoutSnapshot(db: Db, limit: number): string[] {
+  const rows = db
+    .prepare(
+      `SELECT cislo_dl FROM zaznam WHERE koniec IS NOT NULL AND pocet_poloziek IS NULL AND stav <> 'vylucene'
+       GROUP BY cislo_dl ORDER BY max(zaciatok) DESC LIMIT ?`,
+    )
+    .all(limit) as unknown as { cislo_dl: string }[];
+  return rows.map((r) => r.cislo_dl);
+}

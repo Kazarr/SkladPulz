@@ -77,13 +77,14 @@ export function recordTags(r: ReportRecord): RecordTag[] {
   if (r.status === 'neukoncene') tags.push({ label: 'neukončený', kind: 'err' });
   if (r.suspicion) tags.push({ label: SUSPICION_LABEL[r.suspicion], kind: r.confirmed ? 'ok' : 'warn' });
   if (r.duplicate) tags.push({ label: 'duplicita', kind: 'warn' });
+  if (reviewReasons(r).includes('chybaju_data')) tags.push({ label: 'chýbajú údaje DL', kind: 'warn' });
   return tags;
 }
 
 /** CSS class of a record's table row. */
 export function recordRowClass(r: ReportRecord): 'err' | 'warn' | '' {
   if (r.status === 'neukoncene') return 'err';
-  return isSuspectUnconfirmed(r) || r.duplicate ? 'warn' : '';
+  return isSuspectUnconfirmed(r) || r.duplicate || reviewReasons(r).includes('chybaju_data') ? 'warn' : '';
 }
 
 function matchesStatus(r: ReportRecord, status: StatusFilter | null): boolean {

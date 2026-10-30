@@ -151,4 +151,12 @@ export const MIGRATIONS: readonly string[] = [
     SELECT * FROM zaznam
     WHERE stav IN ('ok', 'opravene') AND (podozrenie IS NULL OR potvrdene = 1) AND (duplicita = 0 OR potvrdene = 1);
   `,
+  // A record that ended while ONIX was down and never got its snapshot would count as a note with 0 lines and 0 kg: it waits for a manager.
+  `
+  DROP VIEW zaznam_hodnotene;
+  CREATE VIEW zaznam_hodnotene AS
+    SELECT * FROM zaznam
+    WHERE stav IN ('ok', 'opravene') AND (podozrenie IS NULL OR potvrdene = 1) AND (duplicita = 0 OR potvrdene = 1)
+      AND (pocet_poloziek IS NOT NULL OR potvrdene = 1);
+  `,
 ];
