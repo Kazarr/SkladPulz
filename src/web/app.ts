@@ -4,6 +4,7 @@ import type { Config } from '../config.ts';
 import type { Db } from '../db/db.ts';
 import type { DeliveryNoteSource } from '../onix/source.ts';
 import { adminRoutes } from './routes/admin.ts';
+import { reportRoutes } from './routes/report.ts';
 import { stationRoutes } from './routes/station.ts';
 
 export interface AppDeps {
@@ -34,6 +35,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   });
   app.route('/', stationRoutes(deps));
   app.route('/', adminRoutes(deps));
+  app.route('/', reportRoutes(deps));
   app.onError((err, c) => {
     deps.logError(`${c.req.method} ${c.req.path}`, err);
     return c.text('Nastala chyba. Skúste to znova; ak pretrváva, kontaktujte správcu.', 500);
