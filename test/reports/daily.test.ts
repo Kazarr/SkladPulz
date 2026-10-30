@@ -113,6 +113,22 @@ test('worker and activity filters also narrow the summary', () => {
   assert.deepEqual(only.sections.map((s) => [s.activity, s.rows.map((r) => r.workerName)]), [['VYCH', ['Boris']]]);
 });
 
+test('the team row stays the whole team under a worker filter: totals, index and review counts', () => {
+  const env = testEnv();
+  const a = addWorker(env.db, 'Anna', 'Z0001');
+  const b = addWorker(env.db, 'Boris', 'Z0002');
+  addRecord(env.db, { worker: a, start: at('08:00'), net: 600, lines: 4, dl: 'DL1' });
+  addRecord(env.db, { worker: b, start: at('09:00'), net: 600, lines: 6, dl: 'DL2' });
+  addRecord(env.db, { worker: b, start: at('10:00'), stav: 'neukoncene', method: 'koniec_zmeny', dl: 'DL3' });
+  addRecord(env.db, { worker: b, start: at('11:00'), net: 5, podozrenie: 'kratky', dl: 'DL4' });
+  const all = buildDailyReport(env.db, TZ, D, NO_FILTER, DEFAULT_WEIGHTS).sections[0]?.total;
+  const only = buildDailyReport(env.db, TZ, D, { ...NO_FILTER, workerId: a }, DEFAULT_WEIGHTS).sections[0];
+  assert.deepEqual(only?.rows.map((r) => r.workerName), ['Anna']);
+  assert.equal(only?.total.notes, 2);
+  assert.equal(only?.total.lines, 10);
+  assert.deepEqual(only?.total, all);
+});
+
 test('the day page shows the summary in Slovak number format, highlights rows and links to the DL detail', async () => {
   const env = testEnv();
   const a = addWorker(env.db, 'Anna', 'Z0001');
