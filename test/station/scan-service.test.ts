@@ -198,6 +198,40 @@ test('an excluded earlier record is not touched when another worker starts the s
   assert.deepEqual(records(env).map((r) => r['duplicita']), [0, 0]);
 });
 
+test('scanning a note you already finished with the same activity warns, and the new record is a duplicate that does not count', async () => {
+  const env = setup();
+  await handleScan(env, env.pack, 'Z0001');
+  await handleScan(env, env.pack, 'DL1');
+  env.clock.advance(120);
+  await handleScan(env, env.pack, 'C-KONIEC');
+  env.clock.advance(60);
+  const again = await handleScan(env, env.pack, 'DL1');
+  assert.equal(again.outcome, 'upozornenie');
+  assert.match(again.message, /tento DL ste už zabalili/);
+  assert.equal(again.view.current?.running?.dlNumber, 'DL1');
+  assert.deepEqual(records(env).map((r) => r['duplicita']), [0, 1]);
+  env.clock.advance(120);
+  await handleScan(env, env.pack, 'C-KONIEC');
+  const counted = env.db.prepare('SELECT id FROM zaznam_hodnotene').all() as { id: number }[];
+  assert.deepEqual(counted.map((r) => r.id), [1]);
+});
+
+test('re-scanning the note that is running still only says it runs; a note of another activity or an excluded record of your own is no duplicate', async () => {
+  const env = setup();
+  await handleScan(env, env.pack, 'Z0001');
+  await handleScan(env, env.pack, 'DL1');
+  const running = await handleScan(env, env.pack, 'DL1');
+  assert.match(running.message, /už beží/);
+  assert.equal(records(env).length, 1);
+  await handleScan(env, env.pack, 'C-KONIEC');
+  env.db.prepare("UPDATE zaznam SET stav = 'vylucene' WHERE id = 1").run();
+  assert.equal((await handleScan(env, env.pack, 'DL1')).outcome, 'ok');
+  await handleScan(env, env.pack, 'C-KONIEC');
+  await handleScan(env, env.pack, 'C-VYCH');
+  assert.equal((await handleScan(env, env.pack, 'DL1')).outcome, 'ok');
+  assert.deepEqual(records(env).map((r) => r['duplicita']), [0, 0, 0]);
+});
+
 test('an unknown note is fetched from ONIX on demand; one ONIX does not know is refused in red', async () => {
   const env = setup();
   env.source.add(note('DL900', { customer: 'Nový odberateľ', lines: 40 }));
