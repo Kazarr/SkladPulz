@@ -52,3 +52,12 @@ export function shiftPeriod(p: Period, direction: -1 | 1): Period {
   const n = lengthDays(p) * direction;
   return { kind: p.kind, from: addDays(p.from, n), to: addDays(p.to, n) };
 }
+
+/** "12. 10. 2026 – 18. 10. 2026", or one date for a single day. */
+export function periodLabel(p: Period): string {
+  const d = (date: string): string => {
+    const { year, month, day } = parseDate(date);
+    return `${day}. ${month}. ${year}`;
+  };
+  return p.from === p.to ? d(p.from) : `${d(p.from)} – ${d(p.to)}`;
+}

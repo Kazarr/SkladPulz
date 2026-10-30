@@ -11,7 +11,7 @@ import { at, testEnv, TZ, type TestEnv } from '../helpers.ts';
 import { addRecord, addWorker } from './seed.ts';
 
 const WEEK = periodAround('tyzden', '2026-10-14'); // 12.-18. 10. 2026
-const build = (env: TestEnv, period = WEEK, activity: 'VYCH' | 'BAL' = 'VYCH') => buildComparison(env.db, TZ, period, activity, DEFAULT_WEIGHTS);
+const build = (env: TestEnv, period = WEEK, activity: 'VYCH' | 'BAL' = 'VYCH') => buildComparison(env.db, TZ, period, activity, DEFAULT_WEIGHTS[activity]);
 const rowOf = (c: ReturnType<typeof build>, name: string) => c.rows.find((r) => r.workerName === name);
 
 /** Texts of the cells of the table row that starts with `name`, keyed by header text. */
@@ -137,20 +137,20 @@ test('trend against the previous period: % change of lines/h and of the index, "
   addRecord(env.db, { worker: c, start: at('08:00', '2026-10-06'), net: 1200, lines: 10, dl: 'P2' });
   // an excluded record of Boris last week must not give him a "previous"
   addRecord(env.db, { worker: b, start: at('08:00', '2026-10-06'), net: 600, lines: 10, stav: 'vylucene', dl: 'P3' });
-  // this week: Anna 60 lines/h, Boris 20 lines/h, Cyril 30 lines/h
+  // this week: Anna 60 lines/h, Boris 20 lines/h, Cyril 24 lines/h
   addRecord(env.db, { worker: a, start: at('08:00'), net: 600, lines: 10, dl: 'T1' });
   addRecord(env.db, { worker: b, start: at('08:00'), net: 1800, lines: 10, dl: 'T2' });
-  addRecord(env.db, { worker: c, start: at('08:00'), net: 1200, lines: 10, dl: 'T3' });
+  addRecord(env.db, { worker: c, start: at('08:00'), net: 1500, lines: 10, dl: 'T3' });
   const cmp = build(env);
   assert.equal(rowOf(cmp, 'Anna')?.linesPerHourTrend, 100);
-  assert.equal(rowOf(cmp, 'Cyril')?.linesPerHourTrend, 0);
+  assert.ok(Math.abs((rowOf(cmp, 'Cyril')?.linesPerHourTrend ?? 0) + 20) < 1e-9);
   assert.equal(rowOf(cmp, 'Boris')?.linesPerHourTrend, null);
   assert.equal(rowOf(cmp, 'Boris')?.indexTrend, null);
   // Anna's index against the team rose, Cyril's fell
   assert.ok((rowOf(cmp, 'Anna')?.indexTrend ?? 0) > 0);
   assert.ok((rowOf(cmp, 'Cyril')?.indexTrend ?? 0) < 0);
-  // team: 30 lines/h before, 30 lines in 3600 s = 30 now
-  assert.equal(cmp.team.linesPerHourTrend, 0);
+  // team: 30 lines/h before, 30 lines in 3900 s now
+  assert.ok(Math.abs((cmp.team.linesPerHourTrend ?? 0) - (3600 / 3900 - 1) * 100) < 1e-9);
 });
 
 test('a custom period is compared with the equally long period right before it', () => {
@@ -208,9 +208,10 @@ test('the page defaults to this week for picking, ranks by index and links to th
   assert.equal(anna['Poradie'], '1');
   assert.equal(anna['DL'], '1');
   assert.equal(anna['Položky / hod'], '60,0');
-  assert.equal(anna['Odchýlka položiek / hod (%)'], '+33,3 %');
+  // team: 20 lines in 1800 s = 40 lines/h; Anna 60 = +50 %, Boris 30 = -25 %
+  assert.equal(anna['Odchýlka položiek / hod (%)'], '+50,0 %');
   assert.equal(anna['Trend položiek / hod'], '–');
-  assert.equal(tableRow(html, 'Boris')['Odchýlka položiek / hod (%)'], '-33,3 %');
+  assert.equal(tableRow(html, 'Boris')['Odchýlka položiek / hod (%)'], '-25,0 %');
   assert.equal(tableRow(html, 'Boris')['Poradie'], '2');
   assert.equal(tableRow(html, 'Tím spolu')['Index'], '100,0 %');
   assert.match(html, /datum=2026-10-05/);
@@ -263,14 +264,14 @@ test('the Excel export holds the same table and parses back', async () => {
   const ws = wb.worksheets[0];
   assert.ok(ws);
   const headers = (ws.getRow(1).values as unknown[]).slice(1) as string[];
-  const col = (name: string) => headers.indexOf(name) + 1;
+  const col = (name: string) => headers.findIndex((h) => h === name || h.startsWith(`${name} `)) + 1;
   for (const h of ['Poradie', 'Zamestnanec', 'DL', 'Položky', 'Index (%)', 'Odchýlka položiek / hod (%)', 'Trend položiek / hod (%)', 'Neukončené', 'Podozrivé', 'Vylúčené']) assert.ok(col(h) > 0, h);
   assert.equal(ws.rowCount, 4); // header, Anna, Boris, team
   const anna = ws.getRow(2);
   assert.equal(anna.getCell(col('Zamestnanec')).value, 'Anna');
   assert.equal(anna.getCell(col('Poradie')).value, 1);
   assert.equal(anna.getCell(col('Položky / hod')).value, 60);
-  assert.ok(Math.abs(Number(anna.getCell(col('Odchýlka položiek / hod (%)')).value) - 100 / 3) < 1e-9);
+  assert.equal(anna.getCell(col('Odchýlka položiek / hod (%)')).value, 50);
   assert.equal(anna.getCell(col('Trend položiek / hod (%)')).value, null);
   assert.equal(ws.getRow(3).getCell(col('Neukončené')).value, 1);
   assert.equal(ws.getRow(4).getCell(col('Zamestnanec')).value, 'Tím spolu');
