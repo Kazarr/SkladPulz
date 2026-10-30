@@ -1,4 +1,5 @@
 import { readFileSync, existsSync } from 'node:fs';
+import { isPasswordHash } from './auth.ts';
 
 export type Activity = 'VYCH' | 'BAL';
 export const ACTIVITIES: readonly Activity[] = ['VYCH', 'BAL'];
@@ -138,6 +139,10 @@ export function validateConfig(c: Config): string[] {
   if (!(c.limits.longSeconds > c.limits.shortSeconds)) errors.push('limits.longSeconds musí byť väčšie ako limits.shortSeconds.');
   if (!(c.autoCloseGraceMin >= 0)) errors.push('autoCloseGraceMin musí byť nezáporné číslo.');
   if (!(c.onix.syncIntervalMin >= 1)) errors.push('onix.syncIntervalMin musí byť aspoň 1.');
+  for (const m of c.managers) {
+    if (!isPasswordHash(m.passwordHash)) errors.push(`Vedúci „${m.name}“: passwordHash nie je platný hash (vytvorte ho príkazom npm run hash-password).`);
+  }
+  if (c.managers.length > 0 && c.sessionSecret.length < 32) errors.push('sessionSecret musí mať aspoň 32 znakov, kým sú nastavení vedúci.');
   try {
     new Intl.DateTimeFormat('sk-SK', { timeZone: c.timezone });
   } catch {

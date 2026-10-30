@@ -29,7 +29,7 @@ Postup pre technika (#8). SkladPulz je jedna aplikácia (Node.js) s vlastnou dat
 | `repeatScanEnds` | `true`, ak opakované pípnutie DL má ukončiť záznam (rozhodne zákazník) |
 | `onix.connectionString` | `postgres://skladpulz_ro:HESLO@server:5432/databaza` |
 | `onix.activeStates`, `onix.documentTypes`, `onix.daysBack` | ktoré DL sa sťahujú (prázdne = všetky) |
-| `managers` | prihlasovanie vedúcich, heslo zahashujte `node src\tools\hash-password.ts` |
+| `managers` | prihlasovanie vedúcich, heslo zahashujte príkazom `npm run hash-password` |
 | `sessionSecret` | dlhý náhodný reťazec (aspoň 32 znakov) |
 | `email` | SMTP a príjemcovia denného súhrnu |
 | `baseUrl` | adresa, na ktorej je SkladPulz v sieti (do odkazov v e-mailoch) |
