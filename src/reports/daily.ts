@@ -95,6 +95,7 @@ export function buildDailyReport(db: Db, tz: string, date: string, filter: Repor
   // The index is relative to the whole team, also when the list is filtered to one worker.
   const team = listCountedDayRecords(db, tz, date, { workerId: null, activity: filter.activity });
   const counted = filter.workerId === null ? team : team.filter((r) => r.workerId === filter.workerId);
+  const teamAll = filter.workerId === null ? all : listDayRecords(db, tz, date, { workerId: null, activity: filter.activity });
   const names = new Map(all.map((r) => [r.workerId, r.workerName]));
   const sections: DailySection[] = [];
   for (const activity of ACTIVITIES) {
@@ -118,11 +119,12 @@ export function buildDailyReport(db: Db, tz: string, date: string, filter: Repor
     });
     rows.sort((a, b) => a.workerName.localeCompare(b.workerName, 'sk'));
     const total: SummaryRow = {
-      ...totalsOf(countedHere),
-      index: performanceIndex(w, countedHere, teamHere),
+      // The whole team, also when the list is filtered to one worker.
+      ...totalsOf(teamHere),
+      index: performanceIndex(w, teamHere, teamHere),
       workerName: 'Tím spolu',
-      unfinished: rows.reduce((n, r) => n + r.unfinished, 0),
-      suspect: rows.reduce((n, r) => n + r.suspect, 0),
+      unfinished: teamAll.filter((r) => r.activity === activity && r.status === 'neukoncene').length,
+      suspect: teamAll.filter((r) => r.activity === activity && isSuspectUnconfirmed(r)).length,
     };
     sections.push({ activity, rows, total });
   }
