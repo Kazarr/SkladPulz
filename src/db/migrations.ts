@@ -144,4 +144,11 @@ export const MIGRATIONS: readonly string[] = [
     zmenene          INTEGER NOT NULL
   );
   `,
+  // A delivery note has at most one counted record per activity (glossary): an unconfirmed duplicate does not count.
+  `
+  DROP VIEW zaznam_hodnotene;
+  CREATE VIEW zaznam_hodnotene AS
+    SELECT * FROM zaznam
+    WHERE stav IN ('ok', 'opravene') AND (podozrenie IS NULL OR potvrdene = 1) AND (duplicita = 0 OR potvrdene = 1);
+  `,
 ];

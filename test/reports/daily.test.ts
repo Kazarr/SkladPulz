@@ -136,7 +136,7 @@ test('the day page shows the summary in Slovak number format, highlights rows an
   addRecord(env.db, { worker: a, start: at('09:00'), stav: 'neukoncene', method: 'koniec_zmeny', dl: 'DL2' });
   addRecord(env.db, { worker: a, start: at('10:00'), net: 5, podozrenie: 'kratky', dl: 'DL3' });
   addRecord(env.db, { worker: a, start: at('11:00'), podozrenie: 'dlhy', net: 9000, dl: 'DL4' });
-  addRecord(env.db, { worker: a, start: at('12:00'), duplicita: true, dl: 'DL5' });
+  addRecord(env.db, { worker: a, start: at('12:00'), duplicita: true, potvrdene: true, dl: 'DL5' }); // a confirmed duplicate counts, an unconfirmed one does not
   const res = await createApp(env).request(`/prehlad?datum=${D}`);
   assert.equal(res.status, 200);
   const body = await res.text();

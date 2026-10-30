@@ -107,6 +107,10 @@ export function startRecord(
   const row = db
     .prepare('INSERT INTO zaznam (zamestnanec_id, stanica_id, cinnost, cislo_dl, zaciatok, duplicita) VALUES (?, ?, ?, ?, ?, ?) RETURNING id')
     .get(r.workerId, r.stationId, r.activity, r.dlNumber, r.at, r.duplicate ? 1 : 0) as { id: number };
+  // The earlier records of other workers on this note and activity are duplicates of the new one just as much: the manager decides which stays.
+  if (r.duplicate) {
+    db.prepare("UPDATE zaznam SET duplicita = 1 WHERE cislo_dl = ? AND cinnost = ? AND zamestnanec_id <> ? AND stav <> 'vylucene'").run(r.dlNumber, r.activity, r.workerId);
+  }
   return row.id;
 }
 
