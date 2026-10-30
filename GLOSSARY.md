@@ -45,7 +45,7 @@ One code read by the scanner and sent to a station, logged in `scan_log` with it
 A record whose net time is under the short limit (`kratky`, default 20 s) or over the long limit (`dlhy`). It counts only after a manager confirms it.
 
 **Duplicate** (`duplicita`):
-A record flagged because its delivery note has another non-excluded record of the same activity. When a second worker starts the same note and activity, both records are flagged. It counts only after a manager confirms it; the manager confirms one and excludes the other. Whether two people may legitimately share one note is a customer question (`docs/otazky.md`, row 13).
+A record flagged because its delivery note has another non-excluded record of the same activity. When a second worker starts the same note and activity, both records are flagged; when a worker scans a note they already finished with the same activity, the new record is flagged. It counts only after a manager confirms it; the manager confirms one and excludes the other. Whether two people may legitimately share one note is a customer question (`docs/otazky.md`, row 13).
 
 **Counted record** (`zaznam_hodnotene` view):
 A record that enters averages and speeds: status `ok` or `opravene`, and not suspect and not a duplicate unless confirmed.

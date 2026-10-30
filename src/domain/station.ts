@@ -52,6 +52,8 @@ export interface ScanFacts {
   lookup?: DeliveryNoteLookup;
   /** Only for delivery-note scans: names of other workers with a record of the same activity on this note. */
   doneByOthers?: string[];
+  /** Only for delivery-note scans: the worker already finished this note with this activity. */
+  doneByYou?: boolean;
   repeatScanEnds: boolean;
 }
 
@@ -171,14 +173,18 @@ function decideDeliveryNote(f: ScanFacts, number: string): Decision {
   }
 
   const others = f.doneByOthers ?? [];
-  const duplicate = others.length > 0;
+  const doneByYou = f.doneByYou ?? false;
+  const duplicate = others.length > 0 || doneByYou;
   const effects: Effect[] = r ? endRunning(r, f.now, 'dalsi_dl') : [];
   effects.push({ type: 'startRecord', workerId: w.id, stationId: f.station.id, activity, dlNumber: number, at: f.now, duplicate });
 
   const ended = r ? `DL ${r.dlNumber} ukončený. ` : '';
   const started = `${w.name}: ${ended}${ACTIVITY_LABEL[activity]} DL ${number} beží.`;
   if (duplicate) {
-    return { outcome: 'upozornenie', message: `${started} Pozor: tento DL už ${activity === 'VYCH' ? 'vychystal' : 'zabalil'} ${others.join(', ')}.`, effects };
+    const [sg, pl] = activity === 'VYCH' ? ['vychystal', 'vychystali'] : ['zabalil', 'zabalili'];
+    const byOthers = others.length > 0 ? ` Pozor: tento DL už ${sg} ${others.join(', ')}.` : '';
+    const byYou = doneByYou ? ` Pozor: tento DL ste už ${pl}.` : '';
+    return { outcome: 'upozornenie', message: `${started}${byOthers}${byYou}`, effects };
   }
   if (lookup.status === 'unverified') {
     return { outcome: 'upozornenie', message: `${started} ONIX je nedostupný, údaje DL sa doplnia neskôr.`, effects };

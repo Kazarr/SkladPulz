@@ -16,7 +16,7 @@ Rozhodnutia, ktoré patria zákazníkovi (pravidlá prevádzky, jeho dáta). Ký
 | 10 | Akú normu času má DL (váhy výkonového indexu)? | Zástupné: vychystanie 60 s + 25 s/položka + 0,5 s/kg, balenie 45 s + 12 s/položka + 0,8 s/kg. Po 2–4 týždňoch sa nastavia z dát („Vypočítať z dát“). Index zatiaľ nie je podkladom pre prémie. | stránka Index |
 | 11 | Ako sa delia pásma pri malom tíme a pri rovnakom indexe? | 30 % pracovníkov (zaokrúhlené nadol pri polovici) je hore, 30 % dole, zvyšok v strede; 1 pracovník je v strede; skupina s rovnakým indexom, ktorá zasahuje do dvoch pásiem, ide celá do stredu. Predvolené zobrazenie je poradie, pásma sú prepínač. | prepínač v porovnaní |
 | 12 | S čím sa porovnáva trend? | Deň, týždeň a vlastný rozsah s obdobím rovnakej dĺžky tesne predtým, mesiac s predchádzajúcim kalendárnym mesiacom. Trend sa počíta z rýchlostí a indexu, nie zo súčtov. | — |
-| 13 | Robí jeden DL niekedy viac ľudí? (otázka z #1) | Nie. Keď ten istý DL s tou istou činnosťou začne druhý pracovník, oba záznamy (aj skorší) sa označia ako duplicita a nepočítajú sa, kým vedúci na stránke Kontrola jeden nepotvrdí a druhý nevylúči. | — |
+| 13 | Robí jeden DL niekedy viac ľudí? (otázka z #1) | Nie. Keď ten istý DL s tou istou činnosťou začne druhý pracovník, oba záznamy (aj skorší) sa označia ako duplicita a nepočítajú sa, kým vedúci na stránke Kontrola jeden nepotvrdí a druhý nevylúči. Pracovník, ktorý pípne DL, ktorý už sám ukončil s tou istou činnosťou, dostane oranžové upozornenie „tento DL ste už …“ a nový záznam je tiež duplicita (skorší ostáva, ako bol). | — |
 
 ## Technické predpoklady
 

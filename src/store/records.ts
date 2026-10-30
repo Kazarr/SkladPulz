@@ -89,15 +89,18 @@ export function listRunningRecords(db: Db): WorkRecord[] {
   return (db.prepare('SELECT * FROM zaznam WHERE koniec IS NULL ORDER BY zaciatok').all() as unknown as RecordRow[]).map(toRecord);
 }
 
-/** Names of other workers who have a non-excluded record of this activity on this note. */
-export function otherWorkersOnNote(db: Db, dlNumber: string, activity: Activity, exceptWorkerId: number): string[] {
+/**
+ * Who already has a non-excluded record of this activity on this note: the names of other workers, and whether `workerId` themself
+ * has an ended one. The worker's running record is left out: re-scanning it is answered by "already running".
+ */
+export function priorWorkOnNote(db: Db, dlNumber: string, activity: Activity, workerId: number): { others: string[]; own: boolean } {
   const rows = db
     .prepare(
-      `SELECT DISTINCT z.meno FROM zaznam r JOIN zamestnanec z ON z.id = r.zamestnanec_id
-       WHERE r.cislo_dl = ? AND r.cinnost = ? AND r.zamestnanec_id <> ? AND r.stav <> 'vylucene' ORDER BY z.meno`,
+      `SELECT DISTINCT z.meno, r.zamestnanec_id = ? AS own FROM zaznam r JOIN zamestnanec z ON z.id = r.zamestnanec_id
+       WHERE r.cislo_dl = ? AND r.cinnost = ? AND r.stav NOT IN ('vylucene') AND (r.zamestnanec_id <> ? OR r.koniec IS NOT NULL) ORDER BY z.meno`,
     )
-    .all(dlNumber, activity, exceptWorkerId) as unknown as { meno: string }[];
-  return rows.map((r) => r.meno);
+    .all(workerId, dlNumber, activity, workerId) as unknown as { meno: string; own: number }[];
+  return { others: rows.filter((r) => r.own === 0).map((r) => r.meno), own: rows.some((r) => r.own === 1) };
 }
 
 export function startRecord(
