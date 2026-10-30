@@ -70,7 +70,7 @@ test('saved weights are used by the daily summary and show on the page', async (
   const ib = sec?.rows.find((r) => r.workerName === 'Boris')?.index ?? 0;
   assert.ok(Math.abs(ib / ia - 20) < 1e-9);
   const after = await get(env, '/prehlad?datum=2026-10-14');
-  assert.match(after, /190,5 %/); // Boris 200 s of standard in 100 s = 2.0, team 210 / 200 = 1.05, so 2.0 / 1.05 = 190.5 %
+  assert.match(after, /190,5\s%/); // Boris 200 s of standard in 100 s = 2.0, team 210 / 200 = 1.05, so 2.0 / 1.05 = 190.5 %
 });
 
 test('/index shows the current weights as placeholders and explains the calculation with a 2-line and a 40-line note', async () => {
