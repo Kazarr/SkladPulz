@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type MiddlewareHandler } from 'hono';
 import { serveStatic } from '@hono/node-server/serve-static';
 import type { Config } from '../config.ts';
 import type { Db } from '../db/db.ts';
@@ -25,8 +25,23 @@ export interface AppDeps {
 
 export type AppEnv = { Variables: { manager: string | null } };
 
+/**
+ * Refuses a state-changing request that a browser marks as coming from another site: an `Origin` that is not our own origin
+ * (`null` included), or `Sec-Fetch-Site: cross-site`. Requests without these headers (scanner scripts, curl, tests) pass.
+ */
+export const sameOriginOnly: MiddlewareHandler = async (c, next) => {
+  if (c.req.method !== 'GET' && c.req.method !== 'HEAD') {
+    const origin = c.req.header('origin');
+    if ((origin !== undefined && origin !== new URL(c.req.url).origin) || c.req.header('sec-fetch-site') === 'cross-site') {
+      return c.text('Požiadavka z inej stránky sa nevykoná.', 403);
+    }
+  }
+  await next();
+};
+
 export function createApp(deps: AppDeps): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
+  app.use('*', sameOriginOnly);
   app.use('*', authMiddleware(deps));
   app.use('/static/*', serveStatic({ root: './public', rewriteRequestPath: (p) => p.replace(/^\/static/, '') }));
   app.get('/health', (c) => {

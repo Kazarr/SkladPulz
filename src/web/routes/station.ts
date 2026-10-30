@@ -100,6 +100,8 @@ export function stationRoutes(deps: AppDeps): Hono<AppEnv> {
   r.post('/api/stanica/:id/scan', async (c) => {
     const id = stationId(c.req.param('id'));
     if (id === null) return c.json({ error: 'Stanica neexistuje.' }, 404);
+    // text/plain and form posts need no CORS preflight, so any page could send them; JSON from another origin does need one.
+    if (!/^application\/json\s*(;|$)/i.test(c.req.header('content-type') ?? '')) return c.json({ error: 'Telo požiadavky musí mať typ application/json.' }, 415);
     let kod: unknown;
     try {
       kod = ((await c.req.json()) as { kod?: unknown }).kod;
