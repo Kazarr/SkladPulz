@@ -4,6 +4,7 @@ import { ACTIVITY_LABEL } from '../domain/station.ts';
 import { buildDailyReport, needsReview, type DailySection, type ReportFilter, type SummaryRow } from '../reports/daily.ts';
 import { dailyWorkbookBytes } from '../reports/daily-export.ts';
 import { formatNumber, formatSeconds } from '../reports/format.ts';
+import { getIndexWeights } from '../store/index-weights.ts';
 import { parseDate } from '../time.ts';
 import type { MailMessage } from './transport.ts';
 
@@ -38,7 +39,7 @@ function textSection(s: DailySection): string {
 
 /** The summary e-mail of local day `date` (Slovak): HTML with inline styles, a plain-text alternative and, when configured, the day's Excel. */
 export async function buildDailySummary(db: Db, config: Config, date: string): Promise<MailMessage> {
-  const report = buildDailyReport(db, config.timezone, date, ALL);
+  const report = buildDailyReport(db, config.timezone, date, ALL, getIndexWeights(db));
   const { year, month, day } = parseDate(date);
   const label = `${day}. ${month}. ${year}`;
   const review = report.records.filter(needsReview).length;

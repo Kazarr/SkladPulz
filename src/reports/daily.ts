@@ -2,7 +2,7 @@ import { ACTIVITIES, type Activity } from '../config.ts';
 import type { Db } from '../db/db.ts';
 import type { EndMethod, RecordStatus } from '../store/records.ts';
 import { listCountedDayRecords, listDayRecords, type ReportRecord } from './queries.ts';
-import { DEFAULT_WEIGHTS, performanceIndex, type WeightsByActivity } from '../domain/index.ts';
+import { performanceIndex, type WeightsByActivity } from '../domain/index.ts';
 import { totalsByWorkerAndActivity, totalsOf, type Totals } from './metrics.ts';
 
 export type StatusFilter = RecordStatus | 'kontrola';
@@ -90,7 +90,7 @@ function matchesStatus(r: ReportRecord, status: StatusFilter | null): boolean {
   return status === 'kontrola' ? needsReview(r) : r.status === status;
 }
 
-export function buildDailyReport(db: Db, tz: string, date: string, filter: ReportFilter, weights: WeightsByActivity = DEFAULT_WEIGHTS): DailyReport {
+export function buildDailyReport(db: Db, tz: string, date: string, filter: ReportFilter, weights: WeightsByActivity): DailyReport {
   const all = listDayRecords(db, tz, date, filter);
   // The index is relative to the whole team, also when the list is filtered to one worker.
   const team = listCountedDayRecords(db, tz, date, { workerId: null, activity: filter.activity });

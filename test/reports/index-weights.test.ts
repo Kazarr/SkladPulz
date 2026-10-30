@@ -36,7 +36,7 @@ test('the index is in the daily summary: a column per worker and activity, the t
   // standard (default VYCH) of 10 lines / 0 kg = 60 + 250 = 310 s
   addRecord(env.db, { worker: a, start: at('08:00'), net: 310, lines: 10, kg: 0, dl: 'DL1' });
   addRecord(env.db, { worker: b, start: at('08:00'), net: 620, lines: 10, kg: 0, dl: 'DL2' });
-  const sec = buildDailyReport(env.db, TZ, '2026-10-14', NO_FILTER).sections[0];
+  const sec = buildDailyReport(env.db, TZ, '2026-10-14', NO_FILTER, DEFAULT_WEIGHTS).sections[0];
   // team: 620 standard / 930 net; Anna 1.0, Boris 0.5 on the norm
   const team = 620 / 930;
   assert.ok(Math.abs((sec?.rows.find((r) => r.workerName === 'Anna')?.index ?? 0) - (1 / team) * 100) < 1e-9);
@@ -50,8 +50,8 @@ test('filtering the daily report to one worker keeps the team as the base of the
   const b = addWorker(env.db, 'Boris', 'Z0002');
   addRecord(env.db, { worker: a, start: at('08:00'), net: 310, lines: 10, kg: 0, dl: 'DL1' });
   addRecord(env.db, { worker: b, start: at('08:00'), net: 620, lines: 10, kg: 0, dl: 'DL2' });
-  const all = buildDailyReport(env.db, TZ, '2026-10-14', NO_FILTER).sections[0]?.rows.find((r) => r.workerName === 'Anna')?.index;
-  const only = buildDailyReport(env.db, TZ, '2026-10-14', { ...NO_FILTER, workerId: a }).sections[0]?.rows[0]?.index;
+  const all = buildDailyReport(env.db, TZ, '2026-10-14', NO_FILTER, DEFAULT_WEIGHTS).sections[0]?.rows.find((r) => r.workerName === 'Anna')?.index;
+  const only = buildDailyReport(env.db, TZ, '2026-10-14', { ...NO_FILTER, workerId: a }, DEFAULT_WEIGHTS).sections[0]?.rows[0]?.index;
   assert.equal(only, all);
 });
 
