@@ -1,0 +1,56 @@
+{
+  "port": 3000,
+  "dbPath": "data/skladpulz.db",
+  "timezone": "Europe/Bratislava",
+  "shifts": [
+    {
+      "name": "Ranná",
+      "from": "06:00",
+      "to": "14:00"
+    },
+    {
+      "name": "Poobedná",
+      "from": "14:00",
+      "to": "22:00"
+    }
+  ],
+  "limits": {
+    "shortSeconds": 20,
+    "longSeconds": 7200
+  },
+  "autoCloseGraceMin": 30,
+  "repeatScanEnds": false,
+  "onix": {
+    "connectionString": "postgres://skladpulz_ro:HESLO@onix-server:5432/onix",
+    "syncIntervalMin": 2,
+    "view": "skl_aktivne_dl",
+    "activeStates": [],
+    "documentTypes": [],
+    "daysBack": 30,
+    "timeoutMs": 5000
+  },
+  "email": {
+    "enabled": false,
+    "recipients": [
+      "veduci@firma.sk"
+    ],
+    "attachExcel": true,
+    "delayMin": 15,
+    "smtp": {
+      "host": "smtp.firma.sk",
+      "port": 587,
+      "secure": false,
+      "user": "",
+      "password": "",
+      "from": "SkladPulz <skladpulz@localhost>"
+    }
+  },
+  "managers": [
+    {
+      "name": "veduci",
+      "passwordHash": "vygenerujte: node src/tools/hash-password.ts"
+    }
+  ],
+  "sessionSecret": "ZMENTE-NA-NAHODNY-RETAZEC",
+  "baseUrl": "http://localhost:3000"
+}

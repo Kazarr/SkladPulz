@@ -1,0 +1,37 @@
+{
+  "name": "skladpulz",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "npm run build && node --disable-warning=ExperimentalWarning src/main.ts",
+    "build": "tsc -p tsconfig.client.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.client.json --noEmit",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.ts\"",
+    "verify": "npm run typecheck && npm test",
+    "e2e": "npm run build && playwright test",
+    "smoke": "node src/tools/smoke.ts",
+    "backup": "node --disable-warning=ExperimentalWarning src/tools/backup.ts",
+    "onix:check": "node --disable-warning=ExperimentalWarning src/tools/onix-check.ts",
+    "hash-password": "node src/tools/hash-password.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.5",
+    "bwip-js": "^4.11.4",
+    "exceljs": "^4.4.0",
+    "hono": "^4.13.14",
+    "nodemailer": "^10.3.1",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.13",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.6",
+    "@types/nodemailer": "^8.0.2",
+    "@types/pg": "^8.23.1",
+    "typescript": "^7.0.2"
+  }
+}

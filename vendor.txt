@@ -1,0 +1,40 @@
+# Vendored into this repo by tools/vendor.sh: <dest> <git-url> <path-in-upstream> <commit|HEAD>
+# `tools/vendor.sh` re-copies at the pinned commits; `tools/vendor.sh update` moves to upstream tips.
+
+# dev-lessons core
+tools/vendor.sh https://github.com/Kazarr/dev-lessons core/vendor.sh 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
+.claude/skills/charter https://github.com/Kazarr/dev-lessons core/skills/charter 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
+.claude/skills/adopt https://github.com/Kazarr/dev-lessons core/skills/adopt 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
+.claude/skills/express https://github.com/Kazarr/dev-lessons core/skills/express 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
+.claude/skills/run https://github.com/Kazarr/dev-lessons core/skills/run 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
+.claude/skills/lesson https://github.com/Kazarr/dev-lessons core/skills/lesson 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
+.claude/agents/implementer.md https://github.com/Kazarr/dev-lessons core/agents/implementer.md 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
+
+# dev-lessons packs: one line per pack picked from packs/catalog.md, e.g.
+# .claude/skills/testing-strategy https://github.com/Kazarr/dev-lessons packs/testing-strategy HEAD
+
+# mattpocock/skills (MIT)
+.claude/skills/setup-matt-pocock-skills https://github.com/mattpocock/skills skills/engineering/setup-matt-pocock-skills 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/triage https://github.com/mattpocock/skills skills/engineering/triage 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/wayfinder https://github.com/mattpocock/skills skills/engineering/wayfinder 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/grilling https://github.com/mattpocock/skills skills/productivity/grilling 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/domain-modeling https://github.com/mattpocock/skills skills/engineering/domain-modeling 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/research https://github.com/mattpocock/skills skills/engineering/research 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/prototype https://github.com/mattpocock/skills skills/engineering/prototype 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/to-spec https://github.com/mattpocock/skills skills/engineering/to-spec 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/to-tickets https://github.com/mattpocock/skills skills/engineering/to-tickets 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/implement-spec https://github.com/mattpocock/skills skills/engineering/implement-spec 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/implement https://github.com/mattpocock/skills skills/engineering/implement 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/tdd https://github.com/mattpocock/skills skills/engineering/tdd 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/codebase-design https://github.com/mattpocock/skills skills/engineering/codebase-design 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/code-review https://github.com/mattpocock/skills skills/engineering/code-review 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/diagnosing-bugs https://github.com/mattpocock/skills skills/engineering/diagnosing-bugs 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/improve-codebase-architecture https://github.com/mattpocock/skills skills/engineering/improve-codebase-architecture 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/retro https://github.com/mattpocock/skills skills/engineering/retro 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/writing-for-agents https://github.com/mattpocock/skills skills/productivity/writing-for-agents 5beb35b040e3de97e54fa9e386d7e42d15c295c2
+.claude/skills/testing-strategy https://github.com/Kazarr/dev-lessons packs/testing-strategy 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
+.claude/skills/review-standards https://github.com/Kazarr/dev-lessons packs/review-standards 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
+.claude/skills/devops https://github.com/Kazarr/dev-lessons packs/devops 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
+.claude/skills/integration https://github.com/Kazarr/dev-lessons packs/integration 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
+.claude/skills/frontend-design https://github.com/Kazarr/dev-lessons packs/frontend-design 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
+.claude/skills/playwright https://github.com/Kazarr/dev-lessons packs/playwright 84adb884404dd8ee0dba7cb2937f6ab2a2d127ef
