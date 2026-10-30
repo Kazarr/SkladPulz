@@ -78,7 +78,7 @@ export function items(): DemoItem[] {
   return Array.from({ length: 300 }, (_, i) => ({
     id: i + 1,
     name: `Tovar ${i + 1}`,
-    weightKg: r() < 0.06 ? 0 : Math.round((0.05 + r() ** 2 * 24) * 100) / 100,
+    weightKg: r() < 0.06 ? 0 : Math.round((0.05 + r() ** 3 * 9) * 100) / 100,
   }));
 }
 
@@ -94,7 +94,7 @@ function makeNote(r: () => number, seq: number, date: string, state: string): De
   const year = date.slice(0, 4);
   // Most notes are small, a few are large: the reason the performance index exists.
   const count = Math.max(1, Math.round(r() < 0.15 ? 18 + r() * 30 : 1 + r() ** 1.6 * 14));
-  const lines = Array.from({ length: count }, () => ({ item: 1 + Math.floor(r() * 300), amount: 1 + Math.floor(r() ** 2 * 12) }));
+  const lines = Array.from({ length: count }, () => ({ item: 1 + Math.floor(r() * 300), amount: 1 + Math.floor(r() ** 2 * 6) }));
   return {
     number: `DL${year}${String(seq).padStart(5, '0')}`,
     idMaster: 100000 + seq,
